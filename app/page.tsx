@@ -66,17 +66,6 @@ export default function Home() {
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div
-              className="w-2 h-2 rounded-full bg-emerald-500"
-            />
-            <span
-              className="text-xs"
-              style={{ color: "var(--color-text-secondary)" }}
-            >
-              Claude Sonnet 4.6
-            </span>
-          </div>
         </div>
       </header>
 
