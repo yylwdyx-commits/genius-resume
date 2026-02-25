@@ -51,9 +51,17 @@
     --color-text-secondary: #49454F;
   }
 
+  html {
+    /* Fix 100vh bug on mobile browsers (WeChat, Safari) */
+    height: -webkit-fill-available;
+  }
+
   body {
     background-color: var(--md-background);
     color: var(--md-on-background);
+    min-height: -webkit-fill-available;
+    /* Prevent font scaling on orientation change */
+    -webkit-text-size-adjust: 100%;
     @apply antialiased;
   }
 }

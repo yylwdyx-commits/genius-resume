@@ -88,7 +88,7 @@ export default function InputSection({ onSubmit, isLoading, t }: Props) {
   };
 
   return (
-    <div className="flex flex-col gap-5 h-full">
+    <div className="flex flex-col gap-4">
 
       {/* ── Company ── */}
       <div>
@@ -149,7 +149,7 @@ export default function InputSection({ onSubmit, isLoading, t }: Props) {
       </div>
 
       {/* ── Job Description ── */}
-      <div className="flex-1 min-h-0">
+      <div>
         <label className={labelCls}>
           {t.jobDescription}<span className="text-[#B3261E] ml-0.5 normal-case"> *</span>
         </label>
@@ -157,12 +157,12 @@ export default function InputSection({ onSubmit, isLoading, t }: Props) {
           value={jd}
           onChange={(e) => setJd(e.target.value)}
           placeholder={t.jdPlaceholder}
-          className={`${fieldCls} h-44 resize-none scrollbar-thin`}
+          className={`${fieldCls} h-32 md:h-44 resize-none scrollbar-thin`}
         />
       </div>
 
       {/* ── Resume ── */}
-      <div className="flex-1 min-h-0">
+      <div>
         <div className="flex items-center justify-between mb-1.5">
           <label className={labelCls}>{t.resume}</label>
           {/* MD3 Segmented Button */}
@@ -195,12 +195,12 @@ export default function InputSection({ onSubmit, isLoading, t }: Props) {
             value={resume}
             onChange={(e) => setResume(e.target.value)}
             placeholder={t.resumePlaceholder}
-            className={`${fieldCls} h-36 resize-none scrollbar-thin`}
+            className={`${fieldCls} h-28 md:h-36 resize-none scrollbar-thin`}
           />
         ) : (
           <div
             onClick={() => fileRef.current?.click()}
-            className="w-full h-36 rounded-[12px] border-2 border-dashed border-[#CAC4D0] bg-[#FFFBFF] flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-[#6750A4] hover:bg-[#F3EDF7] transition-all"
+            className="w-full h-28 md:h-36 rounded-[12px] border-2 border-dashed border-[#CAC4D0] bg-[#FFFBFF] flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-[#6750A4] hover:bg-[#F3EDF7] transition-all"
           >
             {uploading ? (
               <div className="flex flex-col items-center gap-2">

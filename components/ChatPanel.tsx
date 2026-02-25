@@ -403,8 +403,11 @@ export default function ChatPanel({ company, jd, resume, triggerAction, onReques
         <div ref={bottomRef} />
       </div>
 
-      {/* ── Input area ── */}
-      <div className="border-t border-[#CAC4D0] px-4 py-3 flex gap-3 flex-shrink-0 bg-[#FFFBFF]">
+      {/* ── Input area — pb-safe handles iPhone home bar ── */}
+      <div
+        className="border-t border-[#CAC4D0] px-3 md:px-4 pt-3 pb-3 flex gap-2 md:gap-3 flex-shrink-0 bg-[#FFFBFF]"
+        style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
+      >
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -412,7 +415,7 @@ export default function ChatPanel({ company, jd, resume, triggerAction, onReques
           placeholder={mode === "mock" ? t.mockPlaceholder : t.chatPlaceholder}
           rows={2}
           disabled={isLoading}
-          className="flex-1 px-4 py-2.5 rounded-[4px] border border-[#79747E] bg-[#FFFBFF] text-[#1C1B1F] placeholder-[#49454F] focus:outline-none focus:border-2 focus:border-[#6750A4] text-sm resize-none transition scrollbar-thin"
+          className="flex-1 px-3 md:px-4 py-2.5 rounded-[4px] border border-[#79747E] bg-[#FFFBFF] text-[#1C1B1F] placeholder-[#49454F] focus:outline-none focus:border-2 focus:border-[#6750A4] text-sm resize-none transition scrollbar-thin"
         />
         {/* MD3 Filled Icon Button */}
         <button
