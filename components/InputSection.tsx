@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import Image from "next/image";
+import { T } from "@/lib/i18n";
 
 export interface JobInput {
   company: string;
@@ -18,9 +18,10 @@ interface CompanyInfo {
 interface Props {
   onSubmit: (input: JobInput) => void;
   isLoading: boolean;
+  t: T;
 }
 
-export default function InputSection({ onSubmit, isLoading }: Props) {
+export default function InputSection({ onSubmit, isLoading, t }: Props) {
   const [company, setCompany] = useState("");
   const [jd, setJd] = useState("");
   const [resume, setResume] = useState("");
@@ -37,7 +38,6 @@ export default function InputSection({ onSubmit, isLoading }: Props) {
     setCompanyInfo(null);
     setLogoError(false);
     if (!company.trim()) return;
-
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       setCompanyLoading(true);
@@ -49,50 +49,34 @@ export default function InputSection({ onSubmit, isLoading }: Props) {
         });
         const data = await res.json();
         if (data.domain) setCompanyInfo(data);
-      } catch {
-        // silently ignore
-      } finally {
-        setCompanyLoading(false);
-      }
+      } catch { /* silently ignore */ }
+      finally { setCompanyLoading(false); }
     }, 800);
-
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [company]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setUploading(true);
     setFileName(file.name);
-
     try {
       const formData = new FormData();
       formData.append("file", file);
-
-      const res = await fetch("/api/parse-file", {
-        method: "POST",
-        body: formData,
-      });
-
+      const res = await fetch("/api/parse-file", { method: "POST", body: formData });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setResume(data.text);
       setResumeMode("text");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "文件解析失败，请粘贴文字");
+      alert(err instanceof Error ? err.message : t.uploading);
     } finally {
       setUploading(false);
     }
   };
 
   const handleSubmit = () => {
-    if (!jd.trim()) {
-      alert("请输入职位描述（JD）");
-      return;
-    }
+    if (!jd.trim()) { alert(t.jdAlert); return; }
     onSubmit({ company, jd, resume });
   };
 
@@ -101,19 +85,18 @@ export default function InputSection({ onSubmit, isLoading }: Props) {
       {/* Company */}
       <div>
         <label className="block text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-1.5">
-          目标公司
+          {t.targetCompany}
         </label>
         <input
           type="text"
           value={company}
           onChange={(e) => setCompany(e.target.value)}
-          placeholder="例如：字节跳动、Google、OpenAI..."
-          className="w-full px-3 py-2.5 rounded-lg border border-[#e5e7eb] bg-white text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#7c3aed] focus:border-transparent text-sm transition"
+          placeholder={t.companyPlaceholder}
+          className="w-full px-3 py-2.5 rounded-lg border border-[#e5e7eb] bg-white text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-sm transition"
         />
 
-        {/* Company info card */}
         {companyLoading && (
-          <div className="mt-2 p-3 rounded-xl bg-[#f8f9fa] border border-[#e5e7eb]">
+          <div className="mt-2 p-3 rounded-xl bg-[#fafafa] border border-[#e5e7eb]">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg skeleton" />
               <div className="flex-1 space-y-1.5">
@@ -125,7 +108,7 @@ export default function InputSection({ onSubmit, isLoading }: Props) {
         )}
 
         {!companyLoading && companyInfo && (
-          <div className="mt-2 p-3 rounded-xl bg-[#f8f9fa] border-l-4 border-[#7c3aed] border border-[#e5e7eb]">
+          <div className="mt-2 p-3 rounded-xl bg-[#fafafa] border-l-4 border-violet-500 border border-[#e5e7eb]">
             <div className="flex items-start gap-2.5">
               {!logoError ? (
                 <img
@@ -137,7 +120,7 @@ export default function InputSection({ onSubmit, isLoading }: Props) {
                   onError={() => setLogoError(true)}
                 />
               ) : (
-                <div className="w-8 h-8 rounded-lg bg-[#7c3aed] flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
                   {company.charAt(0).toUpperCase()}
                 </div>
               )}
@@ -146,12 +129,8 @@ export default function InputSection({ onSubmit, isLoading }: Props) {
                   {companyInfo.description.slice(0, 80)}
                 </p>
                 {companyInfo.website && (
-                  <a
-                    href={companyInfo.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-[#7c3aed] hover:underline mt-1 inline-block truncate max-w-full"
-                  >
+                  <a href={companyInfo.website} target="_blank" rel="noopener noreferrer"
+                    className="text-xs text-violet-600 hover:underline mt-1 inline-block truncate max-w-full">
                     {companyInfo.domain}
                   </a>
                 )}
@@ -164,13 +143,13 @@ export default function InputSection({ onSubmit, isLoading }: Props) {
       {/* JD */}
       <div className="flex-1 min-h-0">
         <label className="block text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-1.5">
-          职位描述（JD）<span className="text-red-500 ml-0.5 normal-case">*</span>
+          {t.jobDescription}<span className="text-red-500 ml-0.5 normal-case"> *</span>
         </label>
         <textarea
           value={jd}
           onChange={(e) => setJd(e.target.value)}
-          placeholder="粘贴职位描述，包含岗位职责、任职要求等..."
-          className="w-full h-44 px-3 py-2.5 rounded-lg border border-[#e5e7eb] bg-white text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#7c3aed] focus:border-transparent text-sm resize-none transition scrollbar-thin"
+          placeholder={t.jdPlaceholder}
+          className="w-full h-44 px-3 py-2.5 rounded-lg border border-[#e5e7eb] bg-white text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-sm resize-none transition scrollbar-thin"
         />
       </div>
 
@@ -178,28 +157,16 @@ export default function InputSection({ onSubmit, isLoading }: Props) {
       <div className="flex-1 min-h-0">
         <div className="flex items-center justify-between mb-1.5">
           <label className="block text-xs font-medium text-[#6b7280] uppercase tracking-wide">
-            个人简历
+            {t.resume}
           </label>
           <div className="flex rounded-lg overflow-hidden border border-[#e5e7eb] text-xs">
-            <button
-              onClick={() => setResumeMode("text")}
-              className={`px-2.5 py-1 transition ${
-                resumeMode === "text"
-                  ? "bg-[#7c3aed] text-white"
-                  : "bg-white text-[#6b7280] hover:bg-[#f8f9fa]"
-              }`}
-            >
-              粘贴
+            <button onClick={() => setResumeMode("text")}
+              className={`px-2.5 py-1 transition ${resumeMode === "text" ? "bg-violet-600 text-white" : "bg-white text-[#6b7280] hover:bg-[#fafafa]"}`}>
+              {t.paste}
             </button>
-            <button
-              onClick={() => setResumeMode("file")}
-              className={`px-2.5 py-1 transition ${
-                resumeMode === "file"
-                  ? "bg-[#7c3aed] text-white"
-                  : "bg-white text-[#6b7280] hover:bg-[#f8f9fa]"
-              }`}
-            >
-              上传
+            <button onClick={() => setResumeMode("file")}
+              className={`px-2.5 py-1 transition ${resumeMode === "file" ? "bg-violet-600 text-white" : "bg-white text-[#6b7280] hover:bg-[#fafafa]"}`}>
+              {t.upload}
             </button>
           </div>
         </div>
@@ -208,39 +175,31 @@ export default function InputSection({ onSubmit, isLoading }: Props) {
           <textarea
             value={resume}
             onChange={(e) => setResume(e.target.value)}
-            placeholder="粘贴简历内容（工作经历、项目经历、技能等）..."
-            className="w-full h-40 px-3 py-2.5 rounded-lg border border-[#e5e7eb] bg-white text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#7c3aed] focus:border-transparent text-sm resize-none transition scrollbar-thin"
+            placeholder={t.resumePlaceholder}
+            className="w-full h-40 px-3 py-2.5 rounded-lg border border-[#e5e7eb] bg-white text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-sm resize-none transition scrollbar-thin"
           />
         ) : (
-          <div
-            onClick={() => fileRef.current?.click()}
-            className="w-full h-40 rounded-lg border-2 border-dashed border-[#e5e7eb] bg-white flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-[#7c3aed] hover:bg-[#f8f9fa] transition"
-          >
+          <div onClick={() => fileRef.current?.click()}
+            className="w-full h-40 rounded-lg border-2 border-dashed border-[#e5e7eb] bg-white flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-violet-500 hover:bg-violet-50/30 transition">
             {uploading ? (
               <div className="flex flex-col items-center gap-2">
-                <div className="w-6 h-6 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
-                <span className="text-sm text-[#6b7280]">解析中...</span>
+                <div className="w-6 h-6 border-2 border-violet-600 border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm text-[#6b7280]">{t.uploading}</span>
               </div>
             ) : fileName ? (
               <div className="flex flex-col items-center gap-1.5">
                 <span className="text-2xl">📄</span>
                 <span className="text-sm text-[#111827] font-medium">{fileName}</span>
-                <span className="text-xs text-emerald-600">✓ 解析成功，点击重新上传</span>
+                <span className="text-xs text-emerald-600">{t.parsedSuccess}</span>
               </div>
             ) : (
               <>
                 <span className="text-3xl">📎</span>
-                <span className="text-sm text-[#6b7280]">点击上传简历文件</span>
-                <span className="text-xs text-[#9ca3af]">支持 PDF、Word(.docx)、TXT</span>
+                <span className="text-sm text-[#6b7280]">{t.uploadClick}</span>
+                <span className="text-xs text-[#9ca3af]">{t.uploadFormats}</span>
               </>
             )}
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".pdf,.doc,.docx,.txt"
-              onChange={handleFileUpload}
-              className="hidden"
-            />
+            <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,.txt" onChange={handleFileUpload} className="hidden" />
           </div>
         )}
       </div>
@@ -254,14 +213,14 @@ export default function InputSection({ onSubmit, isLoading }: Props) {
         {isLoading ? (
           <>
             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            <span>分析中...</span>
+            <span>{t.analyzing}</span>
           </>
         ) : (
           <>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
-            <span>开始分析</span>
+            <span>{t.startAnalysis}</span>
           </>
         )}
       </button>

@@ -10,7 +10,7 @@ interface Message {
 
 export async function POST(req: NextRequest) {
   try {
-    const { jd, resume, company, messages, userMessage } = await req.json();
+    const { jd, resume, company, messages, userMessage, language } = await req.json();
 
     if (!userMessage) {
       return new Response(
@@ -18,6 +18,8 @@ export async function POST(req: NextRequest) {
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
+
+    const langInstruction = language && language !== 'en' ? `\n\nIMPORTANT: You must respond entirely in ${language === 'zh' ? 'Simplified Chinese' : language === 'tw' ? 'Traditional Chinese' : language === 'ja' ? 'Japanese' : language === 'ko' ? 'Korean' : language === 'es' ? 'Spanish' : language === 'fr' ? 'French' : language === 'de' ? 'German' : language === 'pt' ? 'Portuguese' : language === 'ar' ? 'Arabic' : 'English'}. Do not use any other language.` : '';
 
     const systemPrompt = `你是一位严格但公正的面试官，正在对候选人进行面试。
 
@@ -35,7 +37,7 @@ export async function POST(req: NextRequest) {
 6. 用中文交流
 
 开始面试时，先做自我介绍并问第一个问题。
-如果候选人说"结束面试"或"面试结束"，给出综合评价和改进建议。`;
+如果候选人说"结束面试"或"面试结束"，给出综合评价和改进建议。${langInstruction}`;
 
     const history: Message[] = messages || [];
 

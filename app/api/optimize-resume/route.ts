@@ -5,7 +5,7 @@ export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
-    const { jd, resume, company } = await req.json();
+    const { jd, resume, company, language } = await req.json();
 
     if (!jd || !resume) {
       return new Response(
@@ -13,6 +13,8 @@ export async function POST(req: NextRequest) {
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
+
+    const langInstruction = language && language !== 'en' ? `\n\nIMPORTANT: You must respond entirely in ${language === 'zh' ? 'Simplified Chinese' : language === 'tw' ? 'Traditional Chinese' : language === 'ja' ? 'Japanese' : language === 'ko' ? 'Korean' : language === 'es' ? 'Spanish' : language === 'fr' ? 'French' : language === 'de' ? 'German' : language === 'pt' ? 'Portuguese' : language === 'ar' ? 'Arabic' : 'English'}. Do not use any other language.` : '';
 
     const systemPrompt = `你是一位专业的简历优化顾问，擅长将候选人的简历与目标职位进行深度匹配。
 你的任务是：
@@ -27,7 +29,7 @@ export async function POST(req: NextRequest) {
 - 再给出【优化建议】：每个简历模块的改写建议（工作经历/项目经历/技能等）
 - 最后给出【优化后的简历片段】：直接可用的改写版本
 
-语言风格：专业、精炼、有力，符合该岗位的行业表达习惯。`;
+语言风格：专业、精炼、有力，符合该岗位的行业表达习惯。${langInstruction}`;
 
     const userMessage = `
 目标公司：${company || "未提供"}

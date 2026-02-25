@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
-    const { company, jd } = await req.json();
+    const { company, jd, language } = await req.json();
 
     if (!company) {
       return NextResponse.json(
@@ -44,9 +44,11 @@ export async function POST(req: NextRequest) {
 
     const searchContext = allResults.join("\n---\n").slice(0, 12000);
 
+    const langInstruction = language && language !== 'en' ? `\n\nIMPORTANT: You must respond entirely in ${language === 'zh' ? 'Simplified Chinese' : language === 'tw' ? 'Traditional Chinese' : language === 'ja' ? 'Japanese' : language === 'ko' ? 'Korean' : language === 'es' ? 'Spanish' : language === 'fr' ? 'French' : language === 'de' ? 'German' : language === 'pt' ? 'Portuguese' : language === 'ar' ? 'Arabic' : 'English'}. Do not use any other language.` : '';
+
     // Use Claude to synthesize the intelligence report
     const systemPrompt = `你是一位专业的职场情报分析师，擅长从互联网信息中提炼对求职者有价值的公司情报。
-你的分析应该：客观、实用、有洞察力，帮助求职者在面试前做好充分准备。`;
+你的分析应该：客观、实用、有洞察力，帮助求职者在面试前做好充分准备。${langInstruction}`;
 
     const userMessage = `
 目标公司：${company}
