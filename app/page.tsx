@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useSession, signOut } from "next-auth/react";
+import { useSession, signOut, signIn } from "next-auth/react";
 import InputSection, { JobInput } from "@/components/InputSection";
 import ChatPanel from "@/components/ChatPanel";
 import { Lang, LANGS, translations } from "@/lib/i18n";
@@ -28,6 +28,7 @@ export default function Home() {
   const [showHistory, setShowHistory] = useState(false);
   const [inputKey, setInputKey] = useState(0); // remount InputSection when loading a record
   const [initialValues, setInitialValues] = useState<Partial<JobInput>>({});
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const langMenuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -65,6 +66,10 @@ export default function Home() {
   const t = translations[lang];
 
   const handleStart = async (input: JobInput) => {
+    if (!session?.user) {
+      setShowLoginPrompt(true);
+      return;
+    }
     setCurrentInput(input);
     setIsLoading(true);
     setMobileView("chat");
@@ -174,8 +179,8 @@ export default function Home() {
               )}
             </div>
 
-            {/* User avatar + menu */}
-            {session?.user && (
+            {/* User avatar + menu / Sign In button */}
+            {session?.user ? (
               <div className="relative" ref={userMenuRef}>
                 <button onClick={() => setShowUserMenu(!showUserMenu)}
                   className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/[0.08] transition">
@@ -212,10 +217,42 @@ export default function Home() {
                   </div>
                 )}
               </div>
+            ) : (
+              <button
+                onClick={() => signIn("google")}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-600 hover:bg-violet-500 text-white text-xs font-medium transition"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                Sign In
+              </button>
             )}
           </div>
         </div>
       </header>
+
+      {/* ── Login prompt modal ── */}
+      {showLoginPrompt && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={() => setShowLoginPrompt(false)}>
+          <div className="bg-[#141414] rounded-2xl p-6 max-w-sm w-full mx-4 border border-white/[0.08]" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-white font-semibold text-lg mb-2">Sign in to continue</h3>
+            <p className="text-white/50 text-sm mb-5">Create a free account to analyze job descriptions and get AI-powered insights.</p>
+            <button
+              onClick={() => { setShowLoginPrompt(false); signIn("google"); }}
+              className="w-full h-10 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-full transition"
+            >
+              Continue with Google
+            </button>
+            <button
+              onClick={() => setShowLoginPrompt(false)}
+              className="w-full mt-2 h-9 text-white/40 text-sm hover:text-white/60 transition"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Main ── */}
       <main className="flex-1 min-h-0 max-w-7xl w-full mx-auto flex flex-col px-3 pt-3 pb-3 md:px-4 md:pt-5 md:pb-5 gap-3">
