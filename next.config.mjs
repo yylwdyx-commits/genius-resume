@@ -1,10 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  serverExternalPackages: ['pdf-parse', '@prisma/client', 'prisma'],
-  api: {
-    bodyParser: {
-      sizeLimit: '10mb',
-    },
+  experimental: {
+    serverComponentsExternalPackages: ['pdf-parse', '@prisma/client', 'prisma'],
   },
 };
 
