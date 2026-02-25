@@ -50,9 +50,9 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "var(--color-background)" }}>
-      {/* Header */}
-      <header className="bg-[#0a0a0a] border-b border-white/[0.06] px-6 flex-shrink-0">
+    <div className="min-h-screen flex flex-col" style={{ background: "var(--md-background)" }}>
+      {/* Header — MD3 Top App Bar (dark brand) */}
+      <header className="bg-[#0d0d0d] border-b border-white/[0.07] px-6 flex-shrink-0">
         <div className="max-w-7xl mx-auto flex items-center justify-between h-14">
           {/* Logo */}
           <div className="flex items-center gap-2.5">
@@ -120,13 +120,12 @@ export default function Home() {
       {/* Main */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-5">
         <div className="flex gap-5 h-[calc(100vh-96px)]">
-          {/* Left panel */}
+          {/* Left panel — MD3 Elevated Surface */}
           <div
-            className="w-[300px] flex-shrink-0 rounded-2xl border overflow-hidden flex flex-col"
+            className="w-[300px] flex-shrink-0 rounded-[16px] overflow-hidden flex flex-col border border-[#CAC4D0]"
             style={{
-              background: "var(--color-surface)",
-              borderColor: "var(--color-border)",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04)",
+              background: "var(--md-surface)",
+              boxShadow: "var(--md-elevation-1)",
             }}
           >
             <div className="flex-1 overflow-y-auto scrollbar-thin p-5">
@@ -134,13 +133,12 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right panel */}
+          {/* Right panel — MD3 Elevated Surface */}
           <div
-            className="flex-1 min-w-0 rounded-2xl border overflow-hidden"
+            className="flex-1 min-w-0 rounded-[16px] overflow-hidden border border-[#CAC4D0]"
             style={{
-              background: "var(--color-surface)",
-              borderColor: "var(--color-border)",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04)",
+              background: "var(--md-surface)",
+              boxShadow: "var(--md-elevation-1)",
             }}
           >
             <ChatPanel

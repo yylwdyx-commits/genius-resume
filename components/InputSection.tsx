@@ -21,6 +21,13 @@ interface Props {
   t: T;
 }
 
+/* shared MD3 outlined text-field class */
+const fieldCls =
+  "w-full px-4 py-3 rounded-[4px] border border-[#79747E] bg-[#FFFBFF] text-[#1C1B1F] placeholder-[#49454F]/70 " +
+  "focus:outline-none focus:border-2 focus:border-[#6750A4] text-sm transition";
+
+const labelCls = "block text-xs font-semibold text-[#49454F] uppercase tracking-widest mb-1.5";
+
 export default function InputSection({ onSubmit, isLoading, t }: Props) {
   const [company, setCompany] = useState("");
   const [jd, setJd] = useState("");
@@ -81,24 +88,24 @@ export default function InputSection({ onSubmit, isLoading, t }: Props) {
   };
 
   return (
-    <div className="flex flex-col gap-4 h-full">
-      {/* Company */}
+    <div className="flex flex-col gap-5 h-full">
+
+      {/* ── Company ── */}
       <div>
-        <label className="block text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-1.5">
-          {t.targetCompany}
-        </label>
+        <label className={labelCls}>{t.targetCompany}</label>
         <input
           type="text"
           value={company}
           onChange={(e) => setCompany(e.target.value)}
           placeholder={t.companyPlaceholder}
-          className="w-full px-3 py-2.5 rounded-lg border border-[#e5e7eb] bg-white text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-sm transition"
+          className={fieldCls}
         />
 
+        {/* Skeleton */}
         {companyLoading && (
-          <div className="mt-2 p-3 rounded-xl bg-[#fafafa] border border-[#e5e7eb]">
+          <div className="mt-2 p-3 rounded-[12px] bg-[#F3EDF7] border border-[#CAC4D0]">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg skeleton" />
+              <div className="w-8 h-8 rounded-full skeleton" />
               <div className="flex-1 space-y-1.5">
                 <div className="h-3 skeleton rounded w-3/4" />
                 <div className="h-3 skeleton rounded w-1/2" />
@@ -107,8 +114,9 @@ export default function InputSection({ onSubmit, isLoading, t }: Props) {
           </div>
         )}
 
+        {/* MD3 Elevated Card — company info */}
         {!companyLoading && companyInfo && (
-          <div className="mt-2 p-3 rounded-xl bg-[#fafafa] border-l-4 border-violet-500 border border-[#e5e7eb]">
+          <div className="mt-2 p-3 rounded-[12px] bg-[#F3EDF7] border-l-4 border-[#6750A4] border border-[#CAC4D0]" style={{ boxShadow: "var(--md-elevation-1)" }}>
             <div className="flex items-start gap-2.5">
               {!logoError ? (
                 <img
@@ -116,21 +124,21 @@ export default function InputSection({ onSubmit, isLoading, t }: Props) {
                   alt={company}
                   width={32}
                   height={32}
-                  className="w-8 h-8 rounded-lg object-contain flex-shrink-0"
+                  className="w-8 h-8 rounded-full object-contain flex-shrink-0 border border-[#CAC4D0]"
                   onError={() => setLogoError(true)}
                 />
               ) : (
-                <div className="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-[#6750A4] flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
                   {company.charAt(0).toUpperCase()}
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p className="text-xs text-[#6b7280] leading-relaxed line-clamp-2">
+                <p className="text-xs text-[#1C1B1F] leading-relaxed line-clamp-2">
                   {companyInfo.description.slice(0, 80)}
                 </p>
                 {companyInfo.website && (
                   <a href={companyInfo.website} target="_blank" rel="noopener noreferrer"
-                    className="text-xs text-violet-600 hover:underline mt-1 inline-block truncate max-w-full">
+                    className="text-xs text-[#6750A4] hover:underline mt-1 inline-block truncate max-w-full">
                     {companyInfo.domain}
                   </a>
                 )}
@@ -140,32 +148,43 @@ export default function InputSection({ onSubmit, isLoading, t }: Props) {
         )}
       </div>
 
-      {/* JD */}
+      {/* ── Job Description ── */}
       <div className="flex-1 min-h-0">
-        <label className="block text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-1.5">
-          {t.jobDescription}<span className="text-red-500 ml-0.5 normal-case"> *</span>
+        <label className={labelCls}>
+          {t.jobDescription}<span className="text-[#B3261E] ml-0.5 normal-case"> *</span>
         </label>
         <textarea
           value={jd}
           onChange={(e) => setJd(e.target.value)}
           placeholder={t.jdPlaceholder}
-          className="w-full h-44 px-3 py-2.5 rounded-lg border border-[#e5e7eb] bg-white text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-sm resize-none transition scrollbar-thin"
+          className={`${fieldCls} h-44 resize-none scrollbar-thin`}
         />
       </div>
 
-      {/* Resume */}
+      {/* ── Resume ── */}
       <div className="flex-1 min-h-0">
         <div className="flex items-center justify-between mb-1.5">
-          <label className="block text-xs font-medium text-[#6b7280] uppercase tracking-wide">
-            {t.resume}
-          </label>
-          <div className="flex rounded-lg overflow-hidden border border-[#e5e7eb] text-xs">
-            <button onClick={() => setResumeMode("text")}
-              className={`px-2.5 py-1 transition ${resumeMode === "text" ? "bg-violet-600 text-white" : "bg-white text-[#6b7280] hover:bg-[#fafafa]"}`}>
+          <label className={labelCls}>{t.resume}</label>
+          {/* MD3 Segmented Button */}
+          <div className="flex rounded-full overflow-hidden border border-[#CAC4D0] text-xs">
+            <button
+              onClick={() => setResumeMode("text")}
+              className={`px-3 py-1.5 transition font-medium ${
+                resumeMode === "text"
+                  ? "bg-[#EADDFF] text-[#21005D]"
+                  : "bg-[#FFFBFF] text-[#49454F] hover:bg-[#F3EDF7]"
+              }`}
+            >
               {t.paste}
             </button>
-            <button onClick={() => setResumeMode("file")}
-              className={`px-2.5 py-1 transition ${resumeMode === "file" ? "bg-violet-600 text-white" : "bg-white text-[#6b7280] hover:bg-[#fafafa]"}`}>
+            <button
+              onClick={() => setResumeMode("file")}
+              className={`px-3 py-1.5 transition font-medium ${
+                resumeMode === "file"
+                  ? "bg-[#EADDFF] text-[#21005D]"
+                  : "bg-[#FFFBFF] text-[#49454F] hover:bg-[#F3EDF7]"
+              }`}
+            >
               {t.upload}
             </button>
           </div>
@@ -176,27 +195,37 @@ export default function InputSection({ onSubmit, isLoading, t }: Props) {
             value={resume}
             onChange={(e) => setResume(e.target.value)}
             placeholder={t.resumePlaceholder}
-            className="w-full h-40 px-3 py-2.5 rounded-lg border border-[#e5e7eb] bg-white text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-sm resize-none transition scrollbar-thin"
+            className={`${fieldCls} h-36 resize-none scrollbar-thin`}
           />
         ) : (
-          <div onClick={() => fileRef.current?.click()}
-            className="w-full h-40 rounded-lg border-2 border-dashed border-[#e5e7eb] bg-white flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-violet-500 hover:bg-violet-50/30 transition">
+          <div
+            onClick={() => fileRef.current?.click()}
+            className="w-full h-36 rounded-[12px] border-2 border-dashed border-[#CAC4D0] bg-[#FFFBFF] flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-[#6750A4] hover:bg-[#F3EDF7] transition-all"
+          >
             {uploading ? (
               <div className="flex flex-col items-center gap-2">
-                <div className="w-6 h-6 border-2 border-violet-600 border-t-transparent rounded-full animate-spin" />
-                <span className="text-sm text-[#6b7280]">{t.uploading}</span>
+                <div className="w-6 h-6 border-2 border-[#6750A4] border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm text-[#49454F]">{t.uploading}</span>
               </div>
             ) : fileName ? (
               <div className="flex flex-col items-center gap-1.5">
-                <span className="text-2xl">📄</span>
-                <span className="text-sm text-[#111827] font-medium">{fileName}</span>
-                <span className="text-xs text-emerald-600">{t.parsedSuccess}</span>
+                <div className="w-10 h-10 rounded-full bg-[#EADDFF] flex items-center justify-center">
+                  <svg className="w-5 h-5 text-[#6750A4]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <span className="text-sm text-[#1C1B1F] font-medium">{fileName}</span>
+                <span className="text-xs text-[#386A1F]">{t.parsedSuccess}</span>
               </div>
             ) : (
               <>
-                <span className="text-3xl">📎</span>
-                <span className="text-sm text-[#6b7280]">{t.uploadClick}</span>
-                <span className="text-xs text-[#9ca3af]">{t.uploadFormats}</span>
+                <div className="w-10 h-10 rounded-full bg-[#EADDFF] flex items-center justify-center">
+                  <svg className="w-5 h-5 text-[#6750A4]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                  </svg>
+                </div>
+                <span className="text-sm text-[#49454F]">{t.uploadClick}</span>
+                <span className="text-xs text-[#79747E]">{t.uploadFormats}</span>
               </>
             )}
             <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,.txt" onChange={handleFileUpload} className="hidden" />
@@ -204,11 +233,12 @@ export default function InputSection({ onSubmit, isLoading, t }: Props) {
         )}
       </div>
 
-      {/* Start button */}
+      {/* ── MD3 Filled Button ── */}
       <button
         onClick={handleSubmit}
         disabled={isLoading}
-        className="w-full h-11 bg-gradient-to-r from-violet-600 to-indigo-500 hover:from-violet-700 hover:to-indigo-600 text-white text-sm font-medium rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
+        className="w-full h-10 bg-[#6750A4] hover:bg-[#5B4397] active:bg-[#4F378B] text-white text-sm font-medium rounded-full transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        style={{ boxShadow: "var(--md-elevation-1)" }}
       >
         {isLoading ? (
           <>

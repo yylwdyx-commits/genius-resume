@@ -4,19 +4,56 @@
 
 @layer base {
   :root {
-    --color-primary: #7c3aed;
-    --color-primary-dark: #6d28d9;
-    --color-primary-light: #ede9fe;
-    --color-surface: #ffffff;
-    --color-background: #fafafa;
-    --color-border: #e5e7eb;
-    --color-text-primary: #111827;
-    --color-text-secondary: #6b7280;
+    /* ── Material Design 3 Color Tokens ── */
+    --md-primary: #6750A4;
+    --md-on-primary: #FFFFFF;
+    --md-primary-container: #EADDFF;
+    --md-on-primary-container: #21005D;
+
+    --md-secondary: #625B71;
+    --md-on-secondary: #FFFFFF;
+    --md-secondary-container: #E8DEF8;
+    --md-on-secondary-container: #1D192B;
+
+    --md-surface: #FFFBFF;
+    --md-on-surface: #1C1B1F;
+    --md-surface-variant: #E7E0EC;
+    --md-on-surface-variant: #49454F;
+
+    --md-surface-container-lowest: #FFFFFF;
+    --md-surface-container-low: #F7F2FA;
+    --md-surface-container: #F3EDF7;
+    --md-surface-container-high: #ECE6F0;
+    --md-surface-container-highest: #E6E0E9;
+
+    --md-outline: #79747E;
+    --md-outline-variant: #CAC4D0;
+
+    --md-background: #FFFBFF;
+    --md-on-background: #1C1B1F;
+
+    --md-error: #B3261E;
+    --md-error-container: #F9DEDC;
+
+    /* ── Elevation Shadows ── */
+    --md-elevation-1: 0px 1px 2px rgba(0,0,0,0.3), 0px 1px 3px 1px rgba(0,0,0,0.15);
+    --md-elevation-2: 0px 1px 2px rgba(0,0,0,0.3), 0px 2px 6px 2px rgba(0,0,0,0.15);
+    --md-elevation-3: 0px 4px 8px 3px rgba(0,0,0,0.15), 0px 1px 3px rgba(0,0,0,0.3);
+
+    /* ── Legacy compat aliases ── */
+    --color-primary: #6750A4;
+    --color-primary-dark: #4F378B;
+    --color-primary-light: #EADDFF;
+    --color-surface: #FFFBFF;
+    --color-background: #FFFBFF;
+    --color-border: #CAC4D0;
+    --color-text-primary: #1C1B1F;
+    --color-text-secondary: #49454F;
   }
 
   body {
-    background-color: var(--color-background);
-    color: var(--color-text-primary);
+    background-color: var(--md-background);
+    color: var(--md-on-background);
     @apply antialiased;
   }
 }
@@ -24,91 +61,81 @@
 @layer utilities {
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: #d1d5db transparent;
+    scrollbar-color: #CAC4D0 transparent;
   }
-
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 5px;
-  }
-
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
+  .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: #d1d5db;
-    border-radius: 3px;
+    background-color: #CAC4D0;
+    border-radius: 2px;
   }
+
+  /* MD3 elevation classes */
+  .md-elevation-1 { box-shadow: var(--md-elevation-1); }
+  .md-elevation-2 { box-shadow: var(--md-elevation-2); }
+  .md-elevation-3 { box-shadow: var(--md-elevation-3); }
+
+  /* MD3 state layer on hover */
+  .md-state-hover:hover { background-color: rgba(103, 80, 164, 0.08); }
 }
 
-/* Markdown content styles */
+/* ── Markdown / prose styles ── */
 .prose-custom h2 {
-  @apply text-lg font-semibold mt-6 mb-3 flex items-center gap-2;
-  color: var(--color-text-primary);
+  @apply text-base font-semibold mt-5 mb-2.5 flex items-center gap-2;
+  color: var(--md-on-surface);
+  letter-spacing: 0.1px;
 }
-
 .prose-custom h3 {
-  @apply text-base font-semibold mt-4 mb-2;
-  color: var(--color-text-primary);
+  @apply text-sm font-semibold mt-4 mb-2;
+  color: var(--md-on-surface);
 }
-
 .prose-custom p {
-  @apply leading-relaxed mb-3;
-  color: var(--color-text-secondary);
+  @apply leading-relaxed mb-3 text-sm;
+  color: var(--md-on-surface-variant);
 }
-
 .prose-custom ul {
-  @apply list-disc list-inside space-y-1 mb-3;
-  color: var(--color-text-secondary);
+  @apply list-disc list-inside space-y-1 mb-3 text-sm;
+  color: var(--md-on-surface-variant);
 }
-
 .prose-custom ol {
-  @apply list-decimal list-inside space-y-1 mb-3;
-  color: var(--color-text-secondary);
+  @apply list-decimal list-inside space-y-1 mb-3 text-sm;
+  color: var(--md-on-surface-variant);
 }
-
-.prose-custom li {
-  @apply leading-relaxed;
-}
-
+.prose-custom li { @apply leading-relaxed; }
 .prose-custom strong {
   @apply font-semibold;
-  color: var(--color-text-primary);
+  color: var(--md-on-surface);
 }
-
 .prose-custom code {
-  @apply px-1.5 py-0.5 rounded text-sm font-mono;
-  background-color: #f3f4f6;
-  color: var(--color-text-secondary);
+  @apply px-1.5 py-0.5 rounded text-xs font-mono;
+  background-color: var(--md-surface-container);
+  color: var(--md-on-surface-variant);
 }
-
 .prose-custom blockquote {
-  @apply pl-4 italic my-3;
-  border-left: 3px solid var(--color-primary-light);
-  color: var(--color-text-secondary);
+  @apply pl-4 italic my-3 text-sm;
+  border-left: 3px solid var(--md-primary-container);
+  color: var(--md-on-surface-variant);
 }
 
-/* Skeleton loading */
+/* ── Skeleton ── */
 @keyframes skeleton-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
 }
-
 .skeleton {
-  background-color: #e5e7eb;
+  background-color: var(--md-surface-container-high);
   border-radius: 4px;
   animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
 
-/* Typing cursor */
+/* ── Typing cursor ── */
 @keyframes blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
 }
-
 .typing-cursor::after {
   content: '▋';
   animation: blink 1s step-end infinite;
-  color: var(--color-primary);
+  color: var(--md-primary);
   margin-left: 2px;
 }
