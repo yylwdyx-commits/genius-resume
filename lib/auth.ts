@@ -13,30 +13,40 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   ],
+  session: {
+    strategy: "jwt",
+  },
   callbacks: {
-    // Attach user id + role to the session
-    async session({ session, user }) {
-      if (session.user) {
-        session.user.id = user.id;
-        session.user.role = (user as { role?: string }).role ?? "user";
-      }
-      return session;
-    },
-    // Auto-promote admin on first sign-in
     async signIn({ user }) {
       if (user.email === ADMIN_EMAIL) {
         await prisma.user.update({
           where: { email: ADMIN_EMAIL },
           data: { role: "admin" },
-        }).catch(() => { /* user may not exist yet, first-time sign-in */ });
+        }).catch(() => {});
       }
       return true;
+    },
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        // Fetch fresh role from DB (signIn may have just updated it)
+        const dbUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { role: true },
+        });
+        token.role = dbUser?.role ?? "user";
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.id as string;
+        session.user.role = token.role as string;
+      }
+      return session;
     },
   },
   pages: {
     signIn: "/login",
-  },
-  session: {
-    strategy: "database",
   },
 };
