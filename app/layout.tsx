@@ -5,9 +5,9 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Genius Resume — AI-Powered Career Intelligence",
+  title: "Jobna — AI-Powered Job Intelligence",
   description:
-    "Resume optimization, company intelligence, interview prep, and mock interviews — all in one AI-powered platform.",
+    "Resume optimization, company intelligence, interview prep, and mock interviews — powered by AI.",
 };
 
 export default function RootLayout({

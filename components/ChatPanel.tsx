@@ -372,8 +372,8 @@ export default function ChatPanel({
     const win = window.open("", "_blank");
     if (!win) return;
     win.document.write(
-      `<html><head><title>简历优化 - Genius Resume</title>` +
-        `<style>body{font-family:'Helvetica Neue',Arial,sans-serif;max-width:800px;margin:2rem auto;line-height:1.7;color:#202124}` +
+      `<html><head><title>简历优化 - Jobna.ai</title>` +
+        `<style>body{font-family:'Helvetica Neue',Arial,sans-serif;max-width:800px;margin:2rem auto;line-height:1.7;color:#111827}` +
         `pre{white-space:pre-wrap;font-family:inherit}` +
         `@media print{button{display:none}}</style></head>` +
         `<body><pre>${lastResumeMsg.content}</pre>` +
@@ -406,12 +406,12 @@ export default function ChatPanel({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-[#e8eaed] flex-shrink-0">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-[#e5e7eb] flex-shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="w-6 h-6 rounded-full bg-[#e8f0fe] flex items-center justify-center text-sm">
+          <div className="w-6 h-6 rounded-full bg-[#ede9fe] flex items-center justify-center text-sm">
             🤖
           </div>
-          <span className="text-sm font-medium text-[#202124]">AI 助手</span>
+          <span className="text-sm font-medium text-[#111827]">AI 助手</span>
           {mode === "mock" && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 font-medium border border-orange-200">
               🎙️ 面试中
@@ -421,7 +421,7 @@ export default function ChatPanel({
         {messages.length > 0 && (
           <button
             onClick={clearMessages}
-            className="text-xs text-[#5f6368] hover:text-[#202124] transition px-2 py-1 rounded hover:bg-[#f8f9fa]"
+            className="text-xs text-[#6b7280] hover:text-[#111827] transition px-2 py-1 rounded hover:bg-[#f8f9fa]"
           >
             清空对话
           </button>
@@ -433,11 +433,11 @@ export default function ChatPanel({
         {messages.length === 0 && !streamingText && (
           <div className="h-full flex items-center justify-center">
             <div className="text-center max-w-xs">
-              <div className="w-16 h-16 rounded-2xl bg-[#e8f0fe] flex items-center justify-center mx-auto mb-4 text-3xl">
+              <div className="w-16 h-16 rounded-2xl bg-[#ede9fe] flex items-center justify-center mx-auto mb-4 text-3xl">
                 ✨
               </div>
-              <p className="text-[#202124] font-medium mb-1">开始你的求职旅程</p>
-              <p className="text-[#5f6368] text-sm leading-relaxed">
+              <p className="text-[#111827] font-medium mb-1">开始你的求职旅程</p>
+              <p className="text-[#6b7280] text-sm leading-relaxed">
                 在左侧填写公司信息和职位描述，
                 <br />
                 点击「开始分析」获取 AI 分析报告
@@ -454,7 +454,7 @@ export default function ChatPanel({
             }`}
           >
             {msg.role === "assistant" && (
-              <div className="w-8 h-8 rounded-xl bg-[#e8f0fe] flex-shrink-0 flex items-center justify-center text-base">
+              <div className="w-8 h-8 rounded-xl bg-[#ede9fe] flex-shrink-0 flex items-center justify-center text-base">
                 🤖
               </div>
             )}
@@ -466,8 +466,8 @@ export default function ChatPanel({
               <div
                 className={`px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
                   msg.role === "user"
-                    ? "bg-[#1a73e8] text-white rounded-tr-sm"
-                    : "bg-white border border-[#e8eaed] shadow-sm text-[#202124] rounded-tl-sm"
+                    ? "bg-[#7c3aed] text-white rounded-tr-sm"
+                    : "bg-white border border-[#e5e7eb] shadow-sm text-[#111827] rounded-tl-sm"
                 }`}
               >
                 {msg.content}
@@ -478,7 +478,7 @@ export default function ChatPanel({
                     <button
                       key={qa.action}
                       onClick={() => onRequestAction(qa.action)}
-                      className="text-xs px-3 py-1.5 rounded-full border border-[#1a73e8] text-[#1a73e8] hover:bg-[#e8f0fe] transition font-medium"
+                      className="text-xs px-3 py-1.5 rounded-full border border-[#7c3aed] text-[#7c3aed] hover:bg-[#ede9fe] transition font-medium"
                     >
                       {qa.label}
                     </button>
@@ -487,7 +487,7 @@ export default function ChatPanel({
               )}
             </div>
             {msg.role === "user" && (
-              <div className="w-8 h-8 rounded-xl bg-[#1a73e8] flex-shrink-0 flex items-center justify-center text-white text-xs font-semibold">
+              <div className="w-8 h-8 rounded-xl bg-[#7c3aed] flex-shrink-0 flex items-center justify-center text-white text-xs font-semibold">
                 我
               </div>
             )}
@@ -497,11 +497,11 @@ export default function ChatPanel({
         {/* Streaming message */}
         {streamingText && isLoading && (
           <div className="flex gap-3">
-            <div className="w-8 h-8 rounded-xl bg-[#e8f0fe] flex-shrink-0 flex items-center justify-center text-base">
+            <div className="w-8 h-8 rounded-xl bg-[#ede9fe] flex-shrink-0 flex items-center justify-center text-base">
               🤖
             </div>
             <div className="max-w-[85%]">
-              <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-white border border-[#e8eaed] shadow-sm text-sm leading-relaxed whitespace-pre-wrap text-[#202124] typing-cursor">
+              <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-white border border-[#e5e7eb] shadow-sm text-sm leading-relaxed whitespace-pre-wrap text-[#111827] typing-cursor">
                 {streamingText}
               </div>
             </div>
@@ -511,21 +511,21 @@ export default function ChatPanel({
         {/* Loading dots */}
         {isLoading && !streamingText && (
           <div className="flex gap-3">
-            <div className="w-8 h-8 rounded-xl bg-[#e8f0fe] flex-shrink-0 flex items-center justify-center text-base">
+            <div className="w-8 h-8 rounded-xl bg-[#ede9fe] flex-shrink-0 flex items-center justify-center text-base">
               🤖
             </div>
-            <div className="bg-white border border-[#e8eaed] px-4 py-3.5 rounded-2xl rounded-tl-sm shadow-sm">
+            <div className="bg-white border border-[#e5e7eb] px-4 py-3.5 rounded-2xl rounded-tl-sm shadow-sm">
               <div className="flex gap-1.5 items-center">
                 <div
-                  className="w-2 h-2 bg-[#9aa0a6] rounded-full animate-bounce"
+                  className="w-2 h-2 bg-[#9ca3af] rounded-full animate-bounce"
                   style={{ animationDelay: "0ms" }}
                 />
                 <div
-                  className="w-2 h-2 bg-[#9aa0a6] rounded-full animate-bounce"
+                  className="w-2 h-2 bg-[#9ca3af] rounded-full animate-bounce"
                   style={{ animationDelay: "150ms" }}
                 />
                 <div
-                  className="w-2 h-2 bg-[#9aa0a6] rounded-full animate-bounce"
+                  className="w-2 h-2 bg-[#9ca3af] rounded-full animate-bounce"
                   style={{ animationDelay: "300ms" }}
                 />
               </div>
@@ -537,7 +537,7 @@ export default function ChatPanel({
       </div>
 
       {/* Input area */}
-      <div className="border-t border-[#e8eaed] p-3 flex gap-2 flex-shrink-0 bg-white">
+      <div className="border-t border-[#e5e7eb] p-3 flex gap-2 flex-shrink-0 bg-white">
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -548,13 +548,13 @@ export default function ChatPanel({
               : "随时向 AI 提问...（Enter 发送，Shift+Enter 换行）"
           }
           rows={2}
-          className="flex-1 px-3 py-2 rounded-lg border border-[#e8eaed] bg-[#f8f9fa] text-[#202124] placeholder-[#9aa0a6] focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent focus:bg-white text-sm resize-none transition scrollbar-thin"
+          className="flex-1 px-3 py-2 rounded-lg border border-[#e5e7eb] bg-[#f8f9fa] text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#7c3aed] focus:border-transparent focus:bg-white text-sm resize-none transition scrollbar-thin"
           disabled={isLoading}
         />
         <button
           onClick={handleSend}
           disabled={!input.trim() || isLoading}
-          className="w-10 h-full bg-[#1a73e8] hover:bg-[#1557b0] text-white rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center flex-shrink-0"
+          className="w-10 h-full bg-[#7c3aed] hover:bg-[#6d28d9] text-white rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center flex-shrink-0"
         >
           {isLoading ? (
             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

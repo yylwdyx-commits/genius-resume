@@ -100,7 +100,7 @@ export default function InputSection({ onSubmit, isLoading }: Props) {
     <div className="flex flex-col gap-4 h-full">
       {/* Company */}
       <div>
-        <label className="block text-xs font-medium text-[#5f6368] uppercase tracking-wide mb-1.5">
+        <label className="block text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-1.5">
           目标公司
         </label>
         <input
@@ -108,12 +108,12 @@ export default function InputSection({ onSubmit, isLoading }: Props) {
           value={company}
           onChange={(e) => setCompany(e.target.value)}
           placeholder="例如：字节跳动、Google、OpenAI..."
-          className="w-full px-3 py-2.5 rounded-lg border border-[#e8eaed] bg-white text-[#202124] placeholder-[#9aa0a6] focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent text-sm transition"
+          className="w-full px-3 py-2.5 rounded-lg border border-[#e5e7eb] bg-white text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#7c3aed] focus:border-transparent text-sm transition"
         />
 
         {/* Company info card */}
         {companyLoading && (
-          <div className="mt-2 p-3 rounded-xl bg-[#f8f9fa] border border-[#e8eaed]">
+          <div className="mt-2 p-3 rounded-xl bg-[#f8f9fa] border border-[#e5e7eb]">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg skeleton" />
               <div className="flex-1 space-y-1.5">
@@ -125,7 +125,7 @@ export default function InputSection({ onSubmit, isLoading }: Props) {
         )}
 
         {!companyLoading && companyInfo && (
-          <div className="mt-2 p-3 rounded-xl bg-[#f8f9fa] border-l-4 border-[#1a73e8] border border-[#e8eaed]">
+          <div className="mt-2 p-3 rounded-xl bg-[#f8f9fa] border-l-4 border-[#7c3aed] border border-[#e5e7eb]">
             <div className="flex items-start gap-2.5">
               {!logoError ? (
                 <img
@@ -137,12 +137,12 @@ export default function InputSection({ onSubmit, isLoading }: Props) {
                   onError={() => setLogoError(true)}
                 />
               ) : (
-                <div className="w-8 h-8 rounded-lg bg-[#1a73e8] flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-[#7c3aed] flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
                   {company.charAt(0).toUpperCase()}
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p className="text-xs text-[#5f6368] leading-relaxed line-clamp-2">
+                <p className="text-xs text-[#6b7280] leading-relaxed line-clamp-2">
                   {companyInfo.description.slice(0, 80)}
                 </p>
                 {companyInfo.website && (
@@ -150,7 +150,7 @@ export default function InputSection({ onSubmit, isLoading }: Props) {
                     href={companyInfo.website}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-[#1a73e8] hover:underline mt-1 inline-block truncate max-w-full"
+                    className="text-xs text-[#7c3aed] hover:underline mt-1 inline-block truncate max-w-full"
                   >
                     {companyInfo.domain}
                   </a>
@@ -163,30 +163,30 @@ export default function InputSection({ onSubmit, isLoading }: Props) {
 
       {/* JD */}
       <div className="flex-1 min-h-0">
-        <label className="block text-xs font-medium text-[#5f6368] uppercase tracking-wide mb-1.5">
+        <label className="block text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-1.5">
           职位描述（JD）<span className="text-red-500 ml-0.5 normal-case">*</span>
         </label>
         <textarea
           value={jd}
           onChange={(e) => setJd(e.target.value)}
           placeholder="粘贴职位描述，包含岗位职责、任职要求等..."
-          className="w-full h-44 px-3 py-2.5 rounded-lg border border-[#e8eaed] bg-white text-[#202124] placeholder-[#9aa0a6] focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent text-sm resize-none transition scrollbar-thin"
+          className="w-full h-44 px-3 py-2.5 rounded-lg border border-[#e5e7eb] bg-white text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#7c3aed] focus:border-transparent text-sm resize-none transition scrollbar-thin"
         />
       </div>
 
       {/* Resume */}
       <div className="flex-1 min-h-0">
         <div className="flex items-center justify-between mb-1.5">
-          <label className="block text-xs font-medium text-[#5f6368] uppercase tracking-wide">
+          <label className="block text-xs font-medium text-[#6b7280] uppercase tracking-wide">
             个人简历
           </label>
-          <div className="flex rounded-lg overflow-hidden border border-[#e8eaed] text-xs">
+          <div className="flex rounded-lg overflow-hidden border border-[#e5e7eb] text-xs">
             <button
               onClick={() => setResumeMode("text")}
               className={`px-2.5 py-1 transition ${
                 resumeMode === "text"
-                  ? "bg-[#1a73e8] text-white"
-                  : "bg-white text-[#5f6368] hover:bg-[#f8f9fa]"
+                  ? "bg-[#7c3aed] text-white"
+                  : "bg-white text-[#6b7280] hover:bg-[#f8f9fa]"
               }`}
             >
               粘贴
@@ -195,8 +195,8 @@ export default function InputSection({ onSubmit, isLoading }: Props) {
               onClick={() => setResumeMode("file")}
               className={`px-2.5 py-1 transition ${
                 resumeMode === "file"
-                  ? "bg-[#1a73e8] text-white"
-                  : "bg-white text-[#5f6368] hover:bg-[#f8f9fa]"
+                  ? "bg-[#7c3aed] text-white"
+                  : "bg-white text-[#6b7280] hover:bg-[#f8f9fa]"
               }`}
             >
               上传
@@ -209,29 +209,29 @@ export default function InputSection({ onSubmit, isLoading }: Props) {
             value={resume}
             onChange={(e) => setResume(e.target.value)}
             placeholder="粘贴简历内容（工作经历、项目经历、技能等）..."
-            className="w-full h-40 px-3 py-2.5 rounded-lg border border-[#e8eaed] bg-white text-[#202124] placeholder-[#9aa0a6] focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent text-sm resize-none transition scrollbar-thin"
+            className="w-full h-40 px-3 py-2.5 rounded-lg border border-[#e5e7eb] bg-white text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#7c3aed] focus:border-transparent text-sm resize-none transition scrollbar-thin"
           />
         ) : (
           <div
             onClick={() => fileRef.current?.click()}
-            className="w-full h-40 rounded-lg border-2 border-dashed border-[#e8eaed] bg-white flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-[#1a73e8] hover:bg-[#f8f9fa] transition"
+            className="w-full h-40 rounded-lg border-2 border-dashed border-[#e5e7eb] bg-white flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-[#7c3aed] hover:bg-[#f8f9fa] transition"
           >
             {uploading ? (
               <div className="flex flex-col items-center gap-2">
-                <div className="w-6 h-6 border-2 border-[#1a73e8] border-t-transparent rounded-full animate-spin" />
-                <span className="text-sm text-[#5f6368]">解析中...</span>
+                <div className="w-6 h-6 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm text-[#6b7280]">解析中...</span>
               </div>
             ) : fileName ? (
               <div className="flex flex-col items-center gap-1.5">
                 <span className="text-2xl">📄</span>
-                <span className="text-sm text-[#202124] font-medium">{fileName}</span>
+                <span className="text-sm text-[#111827] font-medium">{fileName}</span>
                 <span className="text-xs text-emerald-600">✓ 解析成功，点击重新上传</span>
               </div>
             ) : (
               <>
                 <span className="text-3xl">📎</span>
-                <span className="text-sm text-[#5f6368]">点击上传简历文件</span>
-                <span className="text-xs text-[#9aa0a6]">支持 PDF、Word(.docx)、TXT</span>
+                <span className="text-sm text-[#6b7280]">点击上传简历文件</span>
+                <span className="text-xs text-[#9ca3af]">支持 PDF、Word(.docx)、TXT</span>
               </>
             )}
             <input
@@ -249,7 +249,7 @@ export default function InputSection({ onSubmit, isLoading }: Props) {
       <button
         onClick={handleSubmit}
         disabled={isLoading}
-        className="w-full h-11 bg-[#1a73e8] hover:bg-[#1557b0] text-white text-sm font-medium rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
+        className="w-full h-11 bg-gradient-to-r from-violet-600 to-indigo-500 hover:from-violet-700 hover:to-indigo-600 text-white text-sm font-medium rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
       >
         {isLoading ? (
           <>
