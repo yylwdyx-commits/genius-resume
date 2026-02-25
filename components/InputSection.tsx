@@ -19,6 +19,7 @@ interface Props {
   onSubmit: (input: JobInput) => void;
   isLoading: boolean;
   t: T;
+  initialValues?: Partial<JobInput>;
 }
 
 /* shared MD3 outlined text-field class */
@@ -28,10 +29,10 @@ const fieldCls =
 
 const labelCls = "block text-xs font-semibold text-[#49454F] uppercase tracking-widest mb-1.5";
 
-export default function InputSection({ onSubmit, isLoading, t }: Props) {
-  const [company, setCompany] = useState("");
-  const [jd, setJd] = useState("");
-  const [resume, setResume] = useState("");
+export default function InputSection({ onSubmit, isLoading, t, initialValues }: Props) {
+  const [company, setCompany] = useState(initialValues?.company ?? "");
+  const [jd, setJd] = useState(initialValues?.jd ?? "");
+  const [resume, setResume] = useState(initialValues?.resume ?? "");
   const [resumeMode, setResumeMode] = useState<"text" | "file">("text");
   const [uploading, setUploading] = useState(false);
   const [fileName, setFileName] = useState("");

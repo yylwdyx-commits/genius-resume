@@ -21,6 +21,7 @@ interface Props {
   onRequestAction: (action: string) => void;
   lang: Lang;
   t: T;
+  recordId?: string | null;
 }
 
 /* ── Nana Avatar ── */
@@ -137,7 +138,18 @@ async function readSSE(
   return full;
 }
 
-export default function ChatPanel({ company, jd, resume, triggerAction, onRequestAction, lang, t }: Props) {
+async function saveResult(recordId: string | null | undefined, actionType: string, content: string) {
+  if (!recordId) return;
+  try {
+    await fetch(`/api/records/${recordId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ actionType, content }),
+    });
+  } catch { /* non-critical */ }
+}
+
+export default function ChatPanel({ company, jd, resume, triggerAction, onRequestAction, lang, t, recordId }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -231,6 +243,7 @@ export default function ChatPanel({ company, jd, resume, triggerAction, onReques
         actionType: action,
         quickActions: getQuickActions(action, t),
       });
+      saveResult(recordId, action, fullText);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error";
       push({ id: `${Date.now()}-e`, role: "assistant", content: `${t.errorPrefix}${msg}` });

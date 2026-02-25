@@ -1,23 +1,50 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useSession, signOut } from "next-auth/react";
 import InputSection, { JobInput } from "@/components/InputSection";
 import ChatPanel from "@/components/ChatPanel";
 import { Lang, LANGS, translations } from "@/lib/i18n";
 
+interface HistoryItem {
+  id: string;
+  company: string;
+  jdTitle: string;
+  results: string;
+  updatedAt: string;
+}
+
 export default function Home() {
+  const { data: session } = useSession();
   const [lang, setLang] = useState<Lang>("en");
   const [showLangMenu, setShowLangMenu] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const [currentInput, setCurrentInput] = useState<JobInput>({ company: "", jd: "", resume: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [triggerAction, setTriggerAction] = useState<{ action: string; ts: number } | null>(null);
   const [mobileView, setMobileView] = useState<"input" | "chat">("input");
+  const [recordId, setRecordId] = useState<string | null>(null);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [inputKey, setInputKey] = useState(0); // remount InputSection when loading a record
+  const [initialValues, setInitialValues] = useState<Partial<JobInput>>({});
   const langMenuRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
+  // Persist language
   useEffect(() => {
     const saved = localStorage.getItem("jobna_lang") as Lang | null;
     if (saved && translations[saved]) setLang(saved);
   }, []);
+
+  // Load history
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetch("/api/records").then((r) => r.json()).then((data) => {
+        if (Array.isArray(data)) setHistory(data);
+      });
+    }
+  }, [session?.user?.id]);
 
   const switchLang = (l: Lang) => {
     setLang(l);
@@ -25,11 +52,11 @@ export default function Home() {
     setShowLangMenu(false);
   };
 
+  // Close dropdowns on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (langMenuRef.current && !langMenuRef.current.contains(e.target as Node)) {
-        setShowLangMenu(false);
-      }
+      if (langMenuRef.current && !langMenuRef.current.contains(e.target as Node)) setShowLangMenu(false);
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) setShowUserMenu(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -37,20 +64,59 @@ export default function Home() {
 
   const t = translations[lang];
 
-  const handleStart = (input: JobInput) => {
+  const handleStart = async (input: JobInput) => {
     setCurrentInput(input);
     setIsLoading(true);
+    setMobileView("chat");
+
+    // Create a record in DB (non-blocking, best-effort)
+    let newRecordId: string | null = null;
+    try {
+      const res = await fetch("/api/records", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ company: input.company, jdContent: input.jd, resume: input.resume }),
+      });
+      const data = await res.json();
+      if (data.id) {
+        newRecordId = data.id;
+        setRecordId(data.id);
+        // Prepend to history
+        setHistory((prev) => [{
+          id: data.id,
+          company: input.company,
+          jdTitle: input.jd.slice(0, 60),
+          results: "{}",
+          updatedAt: new Date().toISOString(),
+        }, ...prev]);
+      }
+    } catch { /* silently ignore — record saving is non-critical */ }
+
     setTriggerAction({ action: "optimize-resume", ts: Date.now() });
     setTimeout(() => setIsLoading(false), 100);
-    setMobileView("chat"); // auto-switch to chat on mobile
   };
 
   const handleQuickAction = (action: string) => {
     setTriggerAction({ action, ts: Date.now() });
   };
 
+  const loadRecord = async (item: HistoryItem) => {
+    try {
+      const res = await fetch(`/api/records/${item.id}`);
+      const data = await res.json();
+      setInitialValues({ company: data.company, jd: data.jdContent, resume: data.resume });
+      setInputKey((k) => k + 1); // remount InputSection with new values
+      setRecordId(item.id);
+      setShowHistory(false);
+      setMobileView("input");
+    } catch { /* ignore */ }
+  };
+
+  const resultCount = (results: string) => {
+    try { return Object.keys(JSON.parse(results)).length; } catch { return 0; }
+  };
+
   return (
-    /* h-[100dvh] = dynamic viewport height — handles WeChat/Safari browser chrome correctly */
     <div className="h-[100dvh] flex flex-col overflow-hidden" style={{ background: "var(--md-background)" }}>
 
       {/* ── Header ── */}
@@ -69,7 +135,7 @@ export default function Home() {
           </div>
 
           {/* Right side */}
-          <div className="flex items-center gap-3 md:gap-4">
+          <div className="flex items-center gap-2 md:gap-3">
             <span className="text-white/25 text-xs hidden md:block tracking-wide">{t.tagline}</span>
 
             {/* Language switcher */}
@@ -90,9 +156,7 @@ export default function Home() {
               {showLangMenu && (
                 <div className="absolute right-0 top-full mt-2 bg-[#141414] border border-white/[0.08] rounded-xl shadow-2xl z-50 overflow-hidden min-w-[168px] max-h-[70vh] overflow-y-auto">
                   {(Object.keys(LANGS) as Lang[]).map((l) => (
-                    <button
-                      key={l}
-                      onClick={() => switchLang(l)}
+                    <button key={l} onClick={() => switchLang(l)}
                       className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm transition hover:bg-white/[0.06] ${
                         l === lang ? "text-violet-400 bg-white/[0.04]" : "text-white/70"
                       }`}
@@ -109,35 +173,69 @@ export default function Home() {
                 </div>
               )}
             </div>
+
+            {/* User avatar + menu */}
+            {session?.user && (
+              <div className="relative" ref={userMenuRef}>
+                <button onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/[0.08] transition">
+                  {session.user.image ? (
+                    <img src={session.user.image} alt="" width={28} height={28}
+                      className="w-7 h-7 rounded-full border border-white/20" />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-[#EADDFF] flex items-center justify-center text-[#6750A4] text-xs font-semibold">
+                      {session.user.name?.charAt(0) ?? "U"}
+                    </div>
+                  )}
+                  <span className="text-white/70 text-xs hidden sm:block max-w-[100px] truncate">
+                    {session.user.name}
+                  </span>
+                </button>
+                {showUserMenu && (
+                  <div className="absolute right-0 top-full mt-2 bg-[#141414] border border-white/[0.08] rounded-xl shadow-2xl z-50 overflow-hidden min-w-[180px]">
+                    <div className="px-4 py-3 border-b border-white/[0.06]">
+                      <div className="text-white/90 text-sm font-medium truncate">{session.user.name}</div>
+                      <div className="text-white/40 text-xs truncate">{session.user.email}</div>
+                    </div>
+                    {session.user.role === "admin" && (
+                      <a href="/admin"
+                        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-violet-400 hover:bg-white/[0.06] transition">
+                        <span>⚙️</span><span>Admin Dashboard</span>
+                      </a>
+                    )}
+                    <button
+                      onClick={() => signOut({ callbackUrl: "/login" })}
+                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-white/70 hover:bg-white/[0.06] transition"
+                    >
+                      <span>👋</span><span>Sign out</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </header>
 
-      {/* ── Main content ── */}
+      {/* ── Main ── */}
       <main className="flex-1 min-h-0 max-w-7xl w-full mx-auto flex flex-col px-3 pt-3 pb-3 md:px-4 md:pt-5 md:pb-5 gap-3">
 
-        {/* Mobile tab switcher — MD3 segmented, hidden on desktop */}
+        {/* Mobile tab switcher */}
         <div className="flex md:hidden rounded-full border border-[#CAC4D0] overflow-hidden bg-[#FFFBFF] flex-shrink-0 text-sm">
-          <button
-            onClick={() => setMobileView("input")}
+          <button onClick={() => setMobileView("input")}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 font-medium transition ${
-              mobileView === "input" ? "bg-[#EADDFF] text-[#21005D]" : "text-[#49454F] active:bg-[#F3EDF7]"
-            }`}
-          >
-            {/* Edit / form icon */}
+              mobileView === "input" ? "bg-[#EADDFF] text-[#21005D]" : "text-[#49454F]"
+            }`}>
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
             Job Info
           </button>
-          <button
-            onClick={() => setMobileView("chat")}
+          <button onClick={() => setMobileView("chat")}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 font-medium transition ${
-              mobileView === "chat" ? "bg-[#EADDFF] text-[#21005D]" : "text-[#49454F] active:bg-[#F3EDF7]"
-            }`}
-          >
-            {/* Chat icon */}
+              mobileView === "chat" ? "bg-[#EADDFF] text-[#21005D]" : "text-[#49454F]"
+            }`}>
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -146,20 +244,69 @@ export default function Home() {
           </button>
         </div>
 
-        {/* ── Panels ── */}
+        {/* Panels */}
         <div className="flex-1 min-h-0 flex gap-4">
 
-          {/* Left panel — Input */}
+          {/* Left panel */}
           <div
             className={`${mobileView === "input" ? "flex" : "hidden"} md:flex w-full md:w-[300px] flex-shrink-0 flex-col rounded-[16px] overflow-hidden border border-[#CAC4D0]`}
             style={{ background: "var(--md-surface)", boxShadow: "var(--md-elevation-1)" }}
           >
+            {/* History section */}
+            {history.length > 0 && (
+              <div className="flex-shrink-0 border-b border-[#E7E0EC]">
+                <button
+                  onClick={() => setShowHistory(!showHistory)}
+                  className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#F7F2FA] transition text-sm"
+                >
+                  <div className="flex items-center gap-2 text-[#49454F]">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="font-medium">My Records</span>
+                    <span className="bg-[#EADDFF] text-[#6750A4] text-xs px-1.5 py-0.5 rounded-full font-semibold">
+                      {history.length}
+                    </span>
+                  </div>
+                  <svg className={`w-4 h-4 text-[#79747E] transition-transform ${showHistory ? "rotate-180" : ""}`}
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {showHistory && (
+                  <div className="max-h-48 overflow-y-auto scrollbar-thin divide-y divide-[#E7E0EC]">
+                    {history.map((item) => (
+                      <button key={item.id} onClick={() => loadRecord(item)}
+                        className="w-full text-left px-4 py-2.5 hover:bg-[#F3EDF7] transition group">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-[#1C1B1F] truncate max-w-[160px]">
+                            {item.company || "No company"}
+                          </span>
+                          {resultCount(item.results) > 0 && (
+                            <span className="text-xs bg-[#EADDFF] text-[#6750A4] px-1.5 py-0.5 rounded-full flex-shrink-0">
+                              {resultCount(item.results)} ✓
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-[#79747E] truncate mt-0.5">{item.jdTitle || "No description"}</div>
+                        <div className="text-xs text-[#CAC4D0] mt-0.5">
+                          {new Date(item.updatedAt).toLocaleDateString()}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Input form */}
             <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin p-4 md:p-5">
-              <InputSection onSubmit={handleStart} isLoading={isLoading} t={t} />
+              <InputSection key={inputKey} initialValues={initialValues} onSubmit={handleStart} isLoading={isLoading} t={t} />
             </div>
           </div>
 
-          {/* Right panel — Chat */}
+          {/* Right panel */}
           <div
             className={`${mobileView === "chat" ? "flex" : "hidden"} md:flex flex-1 min-w-0 flex-col rounded-[16px] overflow-hidden border border-[#CAC4D0]`}
             style={{ background: "var(--md-surface)", boxShadow: "var(--md-elevation-1)" }}
@@ -172,6 +319,7 @@ export default function Home() {
               onRequestAction={handleQuickAction}
               lang={lang}
               t={t}
+              recordId={recordId}
             />
           </div>
         </div>
