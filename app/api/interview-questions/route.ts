@@ -1,9 +1,18 @@
-import { NextRequest } from "next/server";
-import { createClaudeStream } from "@/lib/claude";
+import { NextRequest, NextResponse } from "next/server";
+import { checkAccess } from "@/lib/planCheck";
+import { createAIStream } from "@/lib/aiClient";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
+  const access = await checkAccess("interview-questions");
+  if (!access.allowed) {
+    return NextResponse.json(
+      { error: access.reason },
+      { status: access.reason === "unauthenticated" ? 401 : 402 }
+    );
+  }
+
   try {
     const { jd, resume, company, language } = await req.json();
 
@@ -14,7 +23,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const langInstruction = language && language !== 'en' ? `\n\nIMPORTANT: You must respond entirely in ${language === 'zh' ? 'Simplified Chinese' : language === 'tw' ? 'Traditional Chinese' : language === 'ja' ? 'Japanese' : language === 'ko' ? 'Korean' : language === 'es' ? 'Spanish' : language === 'fr' ? 'French' : language === 'de' ? 'German' : language === 'pt' ? 'Portuguese' : language === 'ar' ? 'Arabic' : 'English'}. Do not use any other language.` : '';
+    const langInstruction = language && language !== "en"
+      ? `\n\nIMPORTANT: You must respond entirely in ${language === "zh" ? "Simplified Chinese" : language === "tw" ? "Traditional Chinese" : language === "ja" ? "Japanese" : language === "ko" ? "Korean" : language === "es" ? "Spanish" : language === "fr" ? "French" : language === "de" ? "German" : language === "pt" ? "Portuguese" : language === "ar" ? "Arabic" : "English"}. Do not use any other language.`
+      : "";
 
     const systemPrompt = `你是一位资深的技术面试官和HR专家，拥有丰富的面试出题经验。
 你能根据职位描述和候选人背景，精准预测面试中最可能出现的问题，并提供答题思路。${langInstruction}`;
@@ -50,7 +61,7 @@ ${resume || "未提供简历，请基于JD生成通用面试题"}
 
 请用中文，保证题目实用、有针对性。`;
 
-    const stream = createClaudeStream(systemPrompt, userMessage);
+    const stream = createAIStream(systemPrompt, userMessage, undefined, access.userConfig);
 
     return new Response(stream, {
       headers: {

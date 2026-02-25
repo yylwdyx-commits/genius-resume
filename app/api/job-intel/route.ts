@@ -1,21 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { tavilySearch } from "@/lib/tavily";
-import { anthropic, MODEL } from "@/lib/claude";
+import { checkAccess } from "@/lib/planCheck";
+import { createAICompletion } from "@/lib/aiClient";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
+  const access = await checkAccess("job-intel");
+  if (!access.allowed) {
+    return NextResponse.json(
+      { error: access.reason },
+      { status: access.reason === "unauthenticated" ? 401 : 402 }
+    );
+  }
+
   try {
     const { company, jd, language } = await req.json();
 
     if (!company) {
-      return NextResponse.json(
-        { error: "Company name is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Company name is required" }, { status: 400 });
     }
 
-    // Run multiple searches in parallel
     const queries = [
       `${company} 公司 员工评价 口碑 glassdoor`,
       `${company} 面试经历 面试流程 面试题`,
@@ -27,14 +32,11 @@ export async function POST(req: NextRequest) {
       queries.map((q) => tavilySearch(q, 4))
     );
 
-    // Flatten and deduplicate results
     const allResults: string[] = [];
     searchResults.forEach((result, idx) => {
       if (result.status === "fulfilled") {
         result.value.results.forEach((r) => {
-          allResults.push(
-            `【来源：${r.url}】\n标题：${r.title}\n内容：${r.content}\n`
-          );
+          allResults.push(`【来源：${r.url}】\n标题：${r.title}\n内容：${r.content}\n`);
         });
         if (result.value.answer) {
           allResults.push(`【搜索摘要（查询${idx + 1}）】：${result.value.answer}\n`);
@@ -44,9 +46,10 @@ export async function POST(req: NextRequest) {
 
     const searchContext = allResults.join("\n---\n").slice(0, 12000);
 
-    const langInstruction = language && language !== 'en' ? `\n\nIMPORTANT: You must respond entirely in ${language === 'zh' ? 'Simplified Chinese' : language === 'tw' ? 'Traditional Chinese' : language === 'ja' ? 'Japanese' : language === 'ko' ? 'Korean' : language === 'es' ? 'Spanish' : language === 'fr' ? 'French' : language === 'de' ? 'German' : language === 'pt' ? 'Portuguese' : language === 'ar' ? 'Arabic' : 'English'}. Do not use any other language.` : '';
+    const langInstruction = language && language !== "en"
+      ? `\n\nIMPORTANT: You must respond entirely in ${language === "zh" ? "Simplified Chinese" : language === "tw" ? "Traditional Chinese" : language === "ja" ? "Japanese" : language === "ko" ? "Korean" : language === "es" ? "Spanish" : language === "fr" ? "French" : language === "de" ? "German" : language === "pt" ? "Portuguese" : language === "ar" ? "Arabic" : "English"}. Do not use any other language.`
+      : "";
 
-    // Use Claude to synthesize the intelligence report
     const systemPrompt = `你是一位专业的职场情报分析师，擅长从互联网信息中提炼对求职者有价值的公司情报。
 你的分析应该：客观、实用、有洞察力，帮助求职者在面试前做好充分准备。${langInstruction}`;
 
@@ -77,15 +80,7 @@ ${searchContext}
 
 如果某些信息不足，请注明"信息有限"并给出合理推断。用中文回复。`;
 
-    const response = await anthropic.messages.create({
-      model: MODEL,
-      max_tokens: 3000,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userMessage }],
-    });
-
-    const report =
-      response.content[0].type === "text" ? response.content[0].text : "";
+    const report = await createAICompletion(systemPrompt, userMessage, access.userConfig);
 
     return NextResponse.json({ report, sourcesCount: allResults.length });
   } catch (error) {

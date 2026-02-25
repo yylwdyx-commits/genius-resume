@@ -1,5 +1,6 @@
-import { NextRequest } from "next/server";
-import { createClaudeStream } from "@/lib/claude";
+import { NextRequest, NextResponse } from "next/server";
+import { checkAccess } from "@/lib/planCheck";
+import { createAIStream } from "@/lib/aiClient";
 
 export const runtime = "nodejs";
 
@@ -9,6 +10,14 @@ interface Message {
 }
 
 export async function POST(req: NextRequest) {
+  const access = await checkAccess("chat");
+  if (!access.allowed) {
+    return NextResponse.json(
+      { error: access.reason },
+      { status: access.reason === "unauthenticated" ? 401 : 402 }
+    );
+  }
+
   try {
     const { jd, resume, company, messages, userMessage, language } = await req.json();
 
@@ -19,7 +28,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const langInstruction = language && language !== 'en' ? `\n\nIMPORTANT: You must respond entirely in ${language === 'zh' ? 'Simplified Chinese' : language === 'tw' ? 'Traditional Chinese' : language === 'ja' ? 'Japanese' : language === 'ko' ? 'Korean' : language === 'es' ? 'Spanish' : language === 'fr' ? 'French' : language === 'de' ? 'German' : language === 'pt' ? 'Portuguese' : language === 'ar' ? 'Arabic' : 'English'}. Do not use any other language.` : '';
+    const langInstruction = language && language !== "en"
+      ? `\n\nIMPORTANT: You must respond entirely in ${language === "zh" ? "Simplified Chinese" : language === "tw" ? "Traditional Chinese" : language === "ja" ? "Japanese" : language === "ko" ? "Korean" : language === "es" ? "Spanish" : language === "fr" ? "French" : language === "de" ? "German" : language === "pt" ? "Portuguese" : language === "ar" ? "Arabic" : "English"}. Do not use any other language.`
+      : "";
 
     const systemPrompt = `你是一位专业的求职顾问助理。
 
@@ -33,7 +44,7 @@ export async function POST(req: NextRequest) {
 
     const history: Message[] = messages || [];
 
-    const stream = createClaudeStream(systemPrompt, userMessage, history);
+    const stream = createAIStream(systemPrompt, userMessage, history, access.userConfig);
 
     return new Response(stream, {
       headers: {

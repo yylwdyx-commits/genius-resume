@@ -16,6 +16,8 @@ interface AdminUser {
   email: string | null;
   image: string | null;
   role: string;
+  plan: string;
+  planExpiry: string | null;
   createdAt: string;
   _count: { records: number };
 }
@@ -51,6 +53,28 @@ function StatCard({ label, value, icon, color }: { label: string; value: number;
         <div className="text-xs text-[#49454F] mt-0.5">{label}</div>
       </div>
     </div>
+  );
+}
+
+function PlanBadge({ plan, planExpiry }: { plan: string; planExpiry: string | null }) {
+  if (plan === "pro") {
+    return (
+      <div className="flex flex-col gap-0.5">
+        <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-gradient-to-r from-violet-500 to-indigo-500 text-white inline-block">
+          Pro
+        </span>
+        {planExpiry && (
+          <span className="text-[10px] text-[#79747E]">
+            until {new Date(planExpiry).toLocaleDateString()}
+          </span>
+        )}
+      </div>
+    );
+  }
+  return (
+    <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-[#E8DEF8] text-[#625B71]">
+      Free
+    </span>
   );
 }
 
@@ -105,6 +129,8 @@ export default function AdminPage() {
       (s) => s?.toLowerCase().includes(recordSearch.toLowerCase())
     )
   );
+
+  const proCount = users.filter((u) => u.plan === "pro").length;
 
   if (status === "loading" || loading) {
     return (
@@ -179,11 +205,12 @@ export default function AdminPage() {
         {/* ── Overview ── */}
         {tab === "overview" && stats && (
           <div className="flex flex-col gap-5">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <StatCard label="Total Users" value={stats.totalUsers} icon="👥" color="bg-[#EADDFF]" />
               <StatCard label="Total Records" value={stats.totalRecords} icon="📋" color="bg-[#E8DEF8]" />
               <StatCard label="Records Today" value={stats.recordsToday} icon="📅" color="bg-[#D0BCFF]/40" />
               <StatCard label="New Users (7d)" value={stats.newUsersThisWeek} icon="✨" color="bg-[#EADDFF]" />
+              <StatCard label="Pro Users" value={proCount} icon="⚡" color="bg-gradient-to-br from-violet-100 to-indigo-100" />
             </div>
 
             {/* Recent records preview */}
@@ -234,13 +261,14 @@ export default function AdminPage() {
                 placeholder="Search by name or email…"
                 className="flex-1 text-sm outline-none bg-transparent text-[#1C1B1F] placeholder-[#79747E]"
               />
-              <span className="text-xs text-[#79747E]">{filteredUsers.length} users</span>
+              <span className="text-xs text-[#79747E]">{filteredUsers.length} users · {proCount} Pro</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-[#F7F2FA] border-b border-[#E7E0EC]">
                     <th className="text-left px-5 py-3 text-xs font-semibold text-[#49454F] uppercase tracking-wide">User</th>
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-[#49454F] uppercase tracking-wide">Plan</th>
                     <th className="text-left px-5 py-3 text-xs font-semibold text-[#49454F] uppercase tracking-wide">Role</th>
                     <th className="text-left px-5 py-3 text-xs font-semibold text-[#49454F] uppercase tracking-wide">Records</th>
                     <th className="text-left px-5 py-3 text-xs font-semibold text-[#49454F] uppercase tracking-wide">Joined</th>
@@ -258,6 +286,9 @@ export default function AdminPage() {
                             <div className="text-xs text-[#79747E]">{u.email}</div>
                           </div>
                         </div>
+                      </td>
+                      <td className="px-5 py-3">
+                        <PlanBadge plan={u.plan} planExpiry={u.planExpiry} />
                       </td>
                       <td className="px-5 py-3">
                         <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
@@ -287,7 +318,7 @@ export default function AdminPage() {
                     </tr>
                   ))}
                   {filteredUsers.length === 0 && (
-                    <tr><td colSpan={5} className="px-5 py-8 text-center text-[#79747E] text-sm">No users found</td></tr>
+                    <tr><td colSpan={6} className="px-5 py-8 text-center text-[#79747E] text-sm">No users found</td></tr>
                   )}
                 </tbody>
               </table>

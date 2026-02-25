@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
+const FREE_RECORD_LIMIT = 3;
+
 // GET /api/records — list current user's records
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -29,6 +31,19 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { plan: true, customApiKey: true },
+  });
+
+  // Free users without BYOK are limited to 3 records
+  if (user?.plan === "free" && !user?.customApiKey) {
+    const count = await prisma.jobRecord.count({ where: { userId: session.user.id } });
+    if (count >= FREE_RECORD_LIMIT) {
+      return NextResponse.json({ error: "limit_reached" }, { status: 402 });
+    }
+  }
 
   const { company, jdContent, resume } = await req.json();
   const jdTitle = (jdContent as string)?.slice(0, 60) ?? "";

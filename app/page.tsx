@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { useSession, signOut, signIn } from "next-auth/react";
 import InputSection, { JobInput } from "@/components/InputSection";
 import ChatPanel from "@/components/ChatPanel";
+import UpgradeModal from "@/components/UpgradeModal";
+import ApiKeyModal from "@/components/ApiKeyModal";
 import { Lang, LANGS, translations } from "@/lib/i18n";
 
 interface HistoryItem {
@@ -26,9 +28,19 @@ export default function Home() {
   const [recordId, setRecordId] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [showHistory, setShowHistory] = useState(false);
-  const [inputKey, setInputKey] = useState(0); // remount InputSection when loading a record
+  const [inputKey, setInputKey] = useState(0);
   const [initialValues, setInitialValues] = useState<Partial<JobInput>>({});
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+
+  // Plan & upgrade state
+  const [plan, setPlan] = useState<"free" | "pro">("free");
+  const [usageCount, setUsageCount] = useState(0);
+  const [hasCustomKey, setHasCustomKey] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [upgradeReason, setUpgradeReason] = useState<string>("");
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
   const langMenuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -37,6 +49,35 @@ export default function Home() {
     const saved = localStorage.getItem("jobna_lang") as Lang | null;
     if (saved && translations[saved]) setLang(saved);
   }, []);
+
+  // Fetch plan/profile and handle ?upgraded=1 on login
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    fetch("/api/user/profile")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.plan) setPlan(d.plan);
+        if (typeof d.usageCount === "number") setUsageCount(d.usageCount);
+        if (typeof d.hasCustomKey === "boolean") setHasCustomKey(d.hasCustomKey);
+      })
+      .catch(() => {});
+
+    // Handle ?upgraded=1 in URL
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("upgraded") === "1") {
+        setToast("🎉 Welcome to Pro! All features are now unlocked.");
+        window.history.replaceState({}, "", "/");
+      }
+    }
+  }, [session?.user?.id]);
+
+  // Auto-dismiss toast
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 5000);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   // Load history
   useEffect(() => {
@@ -65,6 +106,18 @@ export default function Home() {
 
   const t = translations[lang];
 
+  const refreshProfile = () => {
+    if (!session?.user?.id) return;
+    fetch("/api/user/profile")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.plan) setPlan(d.plan);
+        if (typeof d.usageCount === "number") setUsageCount(d.usageCount);
+        if (typeof d.hasCustomKey === "boolean") setHasCustomKey(d.hasCustomKey);
+      })
+      .catch(() => {});
+  };
+
   const handleStart = async (input: JobInput) => {
     if (!session?.user) {
       setShowLoginPrompt(true);
@@ -74,7 +127,6 @@ export default function Home() {
     setIsLoading(true);
     setMobileView("chat");
 
-    // Create a record in DB (non-blocking, best-effort)
     let newRecordId: string | null = null;
     try {
       const res = await fetch("/api/records", {
@@ -82,11 +134,17 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ company: input.company, jdContent: input.jd, resume: input.resume }),
       });
+      if (res.status === 402) {
+        // Record limit reached for free users
+        setIsLoading(false);
+        setUpgradeReason("limit_reached");
+        setShowUpgrade(true);
+        return;
+      }
       const data = await res.json();
       if (data.id) {
         newRecordId = data.id;
         setRecordId(data.id);
-        // Prepend to history
         setHistory((prev) => [{
           id: data.id,
           company: input.company,
@@ -95,14 +153,20 @@ export default function Home() {
           updatedAt: new Date().toISOString(),
         }, ...prev]);
       }
-    } catch { /* silently ignore — record saving is non-critical */ }
+    } catch { /* silently ignore */ }
 
     setTriggerAction({ action: "optimize-resume", ts: Date.now() });
     setTimeout(() => setIsLoading(false), 100);
+    void newRecordId;
   };
 
   const handleQuickAction = (action: string) => {
     setTriggerAction({ action, ts: Date.now() });
+  };
+
+  const handleUpgradeNeeded = (reason: string) => {
+    setUpgradeReason(reason);
+    setShowUpgrade(true);
   };
 
   const loadRecord = async (item: HistoryItem) => {
@@ -110,7 +174,7 @@ export default function Home() {
       const res = await fetch(`/api/records/${item.id}`);
       const data = await res.json();
       setInitialValues({ company: data.company, jd: data.jdContent, resume: data.resume });
-      setInputKey((k) => k + 1); // remount InputSection with new values
+      setInputKey((k) => k + 1);
       setRecordId(item.id);
       setShowHistory(false);
       setMobileView("input");
@@ -121,8 +185,18 @@ export default function Home() {
     try { return Object.keys(JSON.parse(results)).length; } catch { return 0; }
   };
 
+  const FREE_LIMIT = 3;
+
   return (
     <div className="h-[100dvh] flex flex-col overflow-hidden" style={{ background: "var(--md-background)" }}>
+
+      {/* ── Toast ── */}
+      {toast && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] px-5 py-3 rounded-xl bg-[#1a1a1a] border border-white/10 text-white text-sm shadow-2xl flex items-center gap-3 max-w-sm">
+          <span>{toast}</span>
+          <button onClick={() => setToast(null)} className="text-white/40 hover:text-white ml-auto">✕</button>
+        </div>
+      )}
 
       {/* ── Header ── */}
       <header className="bg-[#0d0d0d] border-b border-white/[0.07] px-4 md:px-6 flex-shrink-0">
@@ -142,6 +216,28 @@ export default function Home() {
           {/* Right side */}
           <div className="flex items-center gap-2 md:gap-3">
             <span className="text-white/25 text-xs hidden md:block tracking-wide">{t.tagline}</span>
+
+            {/* Plan badge (when logged in) */}
+            {session?.user && (
+              <div className="hidden sm:flex items-center">
+                {plan === "pro" ? (
+                  <span className="text-xs px-2.5 py-1 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold">
+                    Pro
+                  </span>
+                ) : hasCustomKey ? (
+                  <span className="text-xs px-2.5 py-1 rounded-full bg-green-500/15 border border-green-500/25 text-green-400 font-medium">
+                    BYOK
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => { setUpgradeReason("pro_required"); setShowUpgrade(true); }}
+                    className="text-xs px-2.5 py-1 rounded-full bg-white/[0.06] border border-white/[0.08] text-white/50 hover:text-white/80 hover:bg-white/[0.10] transition"
+                  >
+                    Free · {usageCount}/{FREE_LIMIT}
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* Language switcher */}
             <div className="relative" ref={langMenuRef}>
@@ -197,11 +293,47 @@ export default function Home() {
                   </span>
                 </button>
                 {showUserMenu && (
-                  <div className="absolute right-0 top-full mt-2 bg-[#141414] border border-white/[0.08] rounded-xl shadow-2xl z-50 overflow-hidden min-w-[180px]">
+                  <div className="absolute right-0 top-full mt-2 bg-[#141414] border border-white/[0.08] rounded-xl shadow-2xl z-50 overflow-hidden min-w-[200px]">
                     <div className="px-4 py-3 border-b border-white/[0.06]">
                       <div className="text-white/90 text-sm font-medium truncate">{session.user.name}</div>
                       <div className="text-white/40 text-xs truncate">{session.user.email}</div>
+                      <div className="mt-1.5 flex items-center gap-1.5">
+                        {plan === "pro" ? (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-400 font-semibold">PRO</span>
+                        ) : (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.06] text-white/40">FREE · {usageCount}/{FREE_LIMIT} used</span>
+                        )}
+                        {hasCustomKey && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/15 text-green-400">BYOK</span>
+                        )}
+                      </div>
                     </div>
+                    <button
+                      onClick={() => { setShowUserMenu(false); setShowApiKey(true); }}
+                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-white/70 hover:bg-white/[0.06] transition"
+                    >
+                      <span>🔑</span><span>My API Key</span>
+                    </button>
+                    {plan === "pro" ? (
+                      <button
+                        onClick={async () => {
+                          setShowUserMenu(false);
+                          const res = await fetch("/api/stripe/portal", { method: "POST" });
+                          const d = await res.json();
+                          if (d.url) window.location.href = d.url;
+                        }}
+                        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-white/70 hover:bg-white/[0.06] transition"
+                      >
+                        <span>💳</span><span>Manage Subscription</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => { setShowUserMenu(false); setUpgradeReason("pro_required"); setShowUpgrade(true); }}
+                        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-violet-400 hover:bg-white/[0.06] transition"
+                      >
+                        <span>⚡</span><span>Upgrade to Pro</span>
+                      </button>
+                    )}
                     {session.user.role === "admin" && (
                       <a href="/admin"
                         className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-violet-400 hover:bg-white/[0.06] transition">
@@ -210,7 +342,7 @@ export default function Home() {
                     )}
                     <button
                       onClick={() => signOut({ callbackUrl: "/login" })}
-                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-white/70 hover:bg-white/[0.06] transition"
+                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-white/70 hover:bg-white/[0.06] transition border-t border-white/[0.06]"
                     >
                       <span>👋</span><span>Sign out</span>
                     </button>
@@ -232,7 +364,7 @@ export default function Home() {
         </div>
       </header>
 
-      {/* ── Login prompt modal ── */}
+      {/* ── Modals ── */}
       {showLoginPrompt && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={() => setShowLoginPrompt(false)}>
           <div className="bg-[#141414] rounded-2xl p-6 max-w-sm w-full mx-4 border border-white/[0.08]" onClick={(e) => e.stopPropagation()}>
@@ -253,6 +385,22 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      <UpgradeModal
+        isOpen={showUpgrade}
+        reason={upgradeReason}
+        onClose={() => setShowUpgrade(false)}
+        onOpenApiKey={() => setShowApiKey(true)}
+      />
+
+      <ApiKeyModal
+        isOpen={showApiKey}
+        onClose={() => setShowApiKey(false)}
+        onSaved={() => {
+          refreshProfile();
+          setToast("API key saved! Usage limits removed.");
+        }}
+      />
 
       {/* ── Main ── */}
       <main className="flex-1 min-h-0 max-w-7xl w-full mx-auto flex flex-col px-3 pt-3 pb-3 md:px-4 md:pt-5 md:pb-5 gap-3">
@@ -357,6 +505,9 @@ export default function Home() {
               lang={lang}
               t={t}
               recordId={recordId}
+              plan={plan}
+              hasCustomKey={hasCustomKey}
+              onUpgradeNeeded={handleUpgradeNeeded}
             />
           </div>
         </div>

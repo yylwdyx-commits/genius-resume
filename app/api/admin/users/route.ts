@@ -15,6 +15,8 @@ export async function GET() {
       email: true,
       image: true,
       role: true,
+      plan: true,
+      planExpiry: true,
       createdAt: true,
       _count: { select: { records: true } },
     },

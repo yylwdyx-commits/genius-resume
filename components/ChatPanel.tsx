@@ -22,51 +22,41 @@ interface Props {
   lang: Lang;
   t: T;
   recordId?: string | null;
+  plan?: "free" | "pro";
+  hasCustomKey?: boolean;
+  onUpgradeNeeded?: (reason: string) => void;
 }
 
 /* ── Nana Avatar ── */
 function NanaAvatar({ size = 32 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" fill="none" style={{ flexShrink: 0 }}>
-      {/* Background circle */}
       <circle cx="20" cy="20" r="20" fill="#6750A4" />
-      {/* Hair — back layer */}
       <ellipse cx="20" cy="14.5" rx="10" ry="7" fill="#1A0A2E" />
-      {/* Hair — top dome */}
       <path d="M10.2 17 Q10 8.5 20 8.5 Q30 8.5 29.8 17Z" fill="#1A0A2E" />
-      {/* Hair — side left */}
       <path d="M10.5 16 Q9.5 21 11 27" stroke="#1A0A2E" strokeWidth="4" strokeLinecap="round" fill="none" />
-      {/* Hair — side right */}
       <path d="M29.5 16 Q30.5 21 29 27" stroke="#1A0A2E" strokeWidth="4" strokeLinecap="round" fill="none" />
-      {/* Face */}
       <ellipse cx="20" cy="22" rx="7.5" ry="8.5" fill="#FDDCAF" />
-      {/* Glasses — left lens */}
       <rect x="11.5" y="19" width="7" height="4.5" rx="1.5" stroke="#3D1A78" strokeWidth="1.2" fill="rgba(255,255,255,0.08)" />
-      {/* Glasses — right lens */}
       <rect x="21.5" y="19" width="7" height="4.5" rx="1.5" stroke="#3D1A78" strokeWidth="1.2" fill="rgba(255,255,255,0.08)" />
-      {/* Glasses — bridge */}
       <line x1="18.5" y1="21.25" x2="21.5" y2="21.25" stroke="#3D1A78" strokeWidth="1.2" />
-      {/* Glasses — left temple */}
       <line x1="11.5" y1="21.25" x2="10" y2="21.25" stroke="#3D1A78" strokeWidth="1.2" />
-      {/* Glasses — right temple */}
       <line x1="28.5" y1="21.25" x2="30" y2="21.25" stroke="#3D1A78" strokeWidth="1.2" />
-      {/* Eyebrows */}
       <path d="M12.5 17.5 Q15 16.5 17.5 17.2" stroke="#1A0A2E" strokeWidth="1" strokeLinecap="round" fill="none" />
       <path d="M22.5 17.2 Q25 16.5 27.5 17.5" stroke="#1A0A2E" strokeWidth="1" strokeLinecap="round" fill="none" />
-      {/* Eyes */}
       <ellipse cx="15" cy="21.25" rx="1.9" ry="1.4" fill="#1A0A2E" />
       <ellipse cx="25" cy="21.25" rx="1.9" ry="1.4" fill="#1A0A2E" />
-      {/* Eye highlights */}
       <circle cx="15.7" cy="20.7" r="0.5" fill="white" fillOpacity="0.9" />
       <circle cx="25.7" cy="20.7" r="0.5" fill="white" fillOpacity="0.9" />
-      {/* Lips */}
       <path d="M17.5 27 Q20 29 22.5 27" stroke="#C07090" strokeWidth="1.3" strokeLinecap="round" fill="none" />
-      {/* Cheek blush */}
       <ellipse cx="13" cy="25" rx="2" ry="1.2" fill="#FFAABB" fillOpacity="0.3" />
       <ellipse cx="27" cy="25" rx="2" ry="1.2" fill="#FFAABB" fillOpacity="0.3" />
     </svg>
   );
 }
+
+// Pro-only actions (locked for free users without BYOK)
+const PRO_ACTIONS = new Set(["job-intel", "interview-questions", "mock-interview"]);
 
 function getQuickActions(action: string, t: T): QuickAction[] {
   const map: Record<string, QuickAction[]> = {
@@ -149,7 +139,10 @@ async function saveResult(recordId: string | null | undefined, actionType: strin
   } catch { /* non-critical */ }
 }
 
-export default function ChatPanel({ company, jd, resume, triggerAction, onRequestAction, lang, t, recordId }: Props) {
+export default function ChatPanel({
+  company, jd, resume, triggerAction, onRequestAction, lang, t, recordId,
+  plan = "free", hasCustomKey = false, onUpgradeNeeded,
+}: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -157,6 +150,8 @@ export default function ChatPanel({ company, jd, resume, triggerAction, onReques
   const [mode, setMode] = useState<"chat" | "mock">("chat");
   const [mockMessages, setMockMessages] = useState<MockMessage[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  const isUnlocked = plan === "pro" || hasCustomKey;
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, streamingText]);
 
@@ -192,6 +187,12 @@ export default function ChatPanel({ company, jd, resume, triggerAction, onReques
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ jd, resume, company, messages: history, userMessage: content, language: lang }),
       });
+      if (res.status === 402 || res.status === 401) {
+        const { error } = await res.json().catch(() => ({ error: "pro_required" }));
+        onUpgradeNeeded?.(error);
+        setMessages((p) => p.slice(0, -1)); // remove the user message we just pushed
+        return;
+      }
       if (!res.ok) throw new Error();
       const reader = res.body?.getReader();
       if (!reader) throw new Error();
@@ -225,6 +226,12 @@ export default function ChatPanel({ company, jd, resume, triggerAction, onReques
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ company, jd, resume, language: lang }),
       });
+      if (res.status === 402 || res.status === 401) {
+        const { error } = await res.json().catch(() => ({ error: "pro_required" }));
+        onUpgradeNeeded?.(error);
+        setMessages((p) => p.slice(0, -1)); // remove user message
+        return;
+      }
       if (!res.ok) throw new Error();
       let fullText = "";
       if (action === "job-intel") {
@@ -263,6 +270,12 @@ export default function ChatPanel({ company, jd, resume, triggerAction, onReques
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ company, jd, resume, messages: history, userMessage: content, language: lang }),
       });
+      if (res.status === 402 || res.status === 401) {
+        const { error } = await res.json().catch(() => ({ error: "pro_required" }));
+        onUpgradeNeeded?.(error);
+        setMessages((p) => p.slice(0, -1));
+        return;
+      }
       if (!res.ok) throw new Error();
       const reader = res.body?.getReader();
       if (!reader) throw new Error();
@@ -282,8 +295,8 @@ export default function ChatPanel({ company, jd, resume, triggerAction, onReques
     win.document.write(
       `<html><head><title>Resume — Jobna.ai</title>` +
       `<style>body{font-family:'Helvetica Neue',Arial,sans-serif;max-width:800px;margin:2rem auto;line-height:1.7;color:#1C1B1F}` +
-      `pre{white-space:pre-wrap;font-family:inherit}@media print{button{display:none}}</style></head>` +
-      `<body><pre>${msg.content}</pre><script>window.print()<\/script></body></html>`
+      `pre{white-space:pre-wrap;font-family:inherit}.footer{margin-top:3rem;padding-top:1rem;border-top:1px solid #eee;color:#aaa;font-size:11px;text-align:center}@media print{button{display:none}}</style></head>` +
+      `<body><pre>${msg.content}</pre><div class="footer">Optimized with Jobna.ai · AI-powered job assistant</div><script>window.print()<\/script></body></html>`
     );
   };
 
@@ -300,7 +313,14 @@ export default function ChatPanel({ company, jd, resume, triggerAction, onReques
         <div className="flex items-center gap-3">
           <NanaAvatar size={36} />
           <div className="flex flex-col">
-            <span className="text-sm font-semibold text-[#1C1B1F] leading-tight">{t.aiAssistant}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-[#1C1B1F] leading-tight">{t.aiAssistant}</span>
+              {isUnlocked && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-600 font-medium">
+                  {hasCustomKey && !isUnlocked ? "BYOK" : plan === "pro" ? "Pro" : "BYOK"}
+                </span>
+              )}
+            </div>
             <span className="text-xs text-[#49454F] leading-tight">AI Career Advisor</span>
           </div>
           {mode === "mock" && (
@@ -331,6 +351,24 @@ export default function ChatPanel({ company, jd, resume, triggerAction, onReques
               </div>
               <p className="text-[#1C1B1F] font-semibold text-base mb-1.5">{t.emptyTitle}</p>
               <p className="text-[#49454F] text-sm leading-relaxed whitespace-pre-line">{t.emptyDesc}</p>
+              {!isUnlocked && (
+                <div className="mt-4 px-4 py-3 rounded-xl bg-[#F3EDF7] border border-[#E8DEF8]">
+                  <p className="text-xs text-[#6750A4] font-medium mb-1">Free plan — 3 resume analyses/month</p>
+                  <div className="flex flex-wrap gap-1.5 justify-center text-xs text-[#79747E]">
+                    {[
+                      { icon: "🔍", label: "Job Intel" },
+                      { icon: "📝", label: "Interview Prep" },
+                      { icon: "🎙️", label: "Mock Interview" },
+                      { icon: "💬", label: "AI Chat" },
+                    ].map((f) => (
+                      <span key={f.label} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white border border-[#CAC4D0]">
+                        <span>{f.icon}</span>{f.label}
+                        <span className="text-[#B3261E]">🔒</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -339,7 +377,6 @@ export default function ChatPanel({ company, jd, resume, triggerAction, onReques
         {messages.map((msg) => (
           <div key={msg.id} className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
 
-            {/* Nana avatar */}
             {msg.role === "assistant" && (
               <div className="flex-shrink-0 mt-0.5">
                 <NanaAvatar size={32} />
@@ -347,7 +384,6 @@ export default function ChatPanel({ company, jd, resume, triggerAction, onReques
             )}
 
             <div className={`flex flex-col gap-2 max-w-[82%] ${msg.role === "user" ? "items-end" : "items-start"}`}>
-              {/* Bubble */}
               <div className={`px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
                 msg.role === "user"
                   ? "bg-[#6750A4] text-white rounded-[20px] rounded-tr-[4px]"
@@ -356,23 +392,29 @@ export default function ChatPanel({ company, jd, resume, triggerAction, onReques
                 {msg.content}
               </div>
 
-              {/* MD3 Assist Chips */}
               {msg.quickActions && msg.quickActions.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {msg.quickActions.map((qa) => (
-                    <button
-                      key={qa.action}
-                      onClick={() => onRequestAction(qa.action)}
-                      className="text-xs px-3.5 py-1.5 rounded-full border border-[#CAC4D0] text-[#49454F] bg-[#FFFBFF] hover:bg-[#EADDFF] hover:border-[#6750A4] hover:text-[#6750A4] transition-all font-medium"
-                    >
-                      {qa.label}
-                    </button>
-                  ))}
+                  {msg.quickActions.map((qa) => {
+                    const locked = !isUnlocked && PRO_ACTIONS.has(qa.action);
+                    return (
+                      <button
+                        key={qa.action}
+                        onClick={() => locked ? onUpgradeNeeded?.("pro_required") : onRequestAction(qa.action)}
+                        className={`text-xs px-3.5 py-1.5 rounded-full border transition-all font-medium flex items-center gap-1 ${
+                          locked
+                            ? "border-[#E7E0EC] text-[#CAC4D0] bg-[#FFFBFF] cursor-pointer hover:bg-[#FEF7FF] hover:border-[#6750A4] hover:text-[#6750A4]"
+                            : "border-[#CAC4D0] text-[#49454F] bg-[#FFFBFF] hover:bg-[#EADDFF] hover:border-[#6750A4] hover:text-[#6750A4]"
+                        }`}
+                      >
+                        {locked && <span className="text-[10px]">🔒</span>}
+                        {qa.label}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
 
-            {/* User avatar */}
             {msg.role === "user" && (
               <div className="w-8 h-8 rounded-full bg-[#E8DEF8] flex-shrink-0 flex items-center justify-center mt-0.5">
                 <svg className="w-4 h-4 text-[#6750A4]" fill="currentColor" viewBox="0 0 24 24">
@@ -416,33 +458,48 @@ export default function ChatPanel({ company, jd, resume, triggerAction, onReques
         <div ref={bottomRef} />
       </div>
 
-      {/* ── Input area — pb-safe handles iPhone home bar ── */}
+      {/* ── Input area ── */}
       <div
         className="border-t border-[#CAC4D0] px-3 md:px-4 pt-3 pb-3 flex gap-2 md:gap-3 flex-shrink-0 bg-[#FFFBFF]"
         style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
       >
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={mode === "mock" ? t.mockPlaceholder : t.chatPlaceholder}
-          rows={2}
-          disabled={isLoading}
-          className="flex-1 px-3 md:px-4 py-2.5 rounded-[4px] border border-[#79747E] bg-[#FFFBFF] text-[#1C1B1F] placeholder-[#49454F] focus:outline-none focus:border-2 focus:border-[#6750A4] text-sm resize-none transition scrollbar-thin"
-        />
-        {/* MD3 Filled Icon Button */}
-        <button
-          onClick={handleSend}
-          disabled={!input.trim() || isLoading}
-          className="w-12 h-12 self-end bg-[#6750A4] hover:bg-[#5B4397] active:bg-[#4F378B] text-white rounded-full transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center flex-shrink-0 shadow-sm"
-        >
-          {isLoading
-            ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            : <svg className="w-4 h-4 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-              </svg>
-          }
-        </button>
+        {/* Chat locked for free users — show prompt to upgrade */}
+        {!isUnlocked && mode === "chat" && (
+          <div className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-[4px] border border-dashed border-[#CAC4D0] text-xs text-[#79747E]">
+            <span>💬 Free chat is a Pro feature.</span>
+            <button
+              onClick={() => onUpgradeNeeded?.("pro_required")}
+              className="text-violet-600 font-medium hover:underline"
+            >
+              Upgrade →
+            </button>
+          </div>
+        )}
+        {(isUnlocked || mode === "mock") && (
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={mode === "mock" ? t.mockPlaceholder : t.chatPlaceholder}
+            rows={2}
+            disabled={isLoading}
+            className="flex-1 px-3 md:px-4 py-2.5 rounded-[4px] border border-[#79747E] bg-[#FFFBFF] text-[#1C1B1F] placeholder-[#49454F] focus:outline-none focus:border-2 focus:border-[#6750A4] text-sm resize-none transition scrollbar-thin"
+          />
+        )}
+        {(isUnlocked || mode === "mock") && (
+          <button
+            onClick={handleSend}
+            disabled={!input.trim() || isLoading}
+            className="w-12 h-12 self-end bg-[#6750A4] hover:bg-[#5B4397] active:bg-[#4F378B] text-white rounded-full transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center flex-shrink-0 shadow-sm"
+          >
+            {isLoading
+              ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              : <svg className="w-4 h-4 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+            }
+          </button>
+        )}
       </div>
     </div>
   );

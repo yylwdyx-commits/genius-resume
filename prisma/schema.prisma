@@ -8,16 +8,27 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  role          String    @default("user")  // "user" | "admin"
-  createdAt     DateTime  @default(now())
-  accounts      Account[]
-  sessions      Session[]
-  records       JobRecord[]
+  id               String    @id @default(cuid())
+  name             String?
+  email            String?   @unique
+  emailVerified    DateTime?
+  image            String?
+  role             String    @default("user")       // "user" | "admin"
+  createdAt        DateTime  @default(now())
+  // subscription
+  plan             String    @default("free")       // "free" | "pro"
+  stripeCustomerId String?
+  stripeSubId      String?
+  planExpiry       DateTime?
+  usageCount       Int       @default(0)            // monthly optimize-resume calls
+  usageResetAt     DateTime  @default(now())
+  // BYOK (Bring Your Own Key)
+  customProvider   String?                          // "anthropic"|"openai"|"gemini"|"deepseek"
+  customApiKey     String?
+  customModel      String?
+  accounts         Account[]
+  sessions         Session[]
+  records          JobRecord[]
 }
 
 model JobRecord {
